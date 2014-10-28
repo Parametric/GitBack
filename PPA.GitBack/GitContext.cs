@@ -5,26 +5,28 @@ namespace PPA.GitBack
 {
     public class GitContext
     {
-        private readonly string _username;
-        private readonly GitApi _gitApi;
-        private readonly string _organization;
+        private readonly IGitApi _gitApi;
 
-        public GitContext(GitApi gitApi)
+        public GitContext(IGitApi gitApi)
         {
 
             _gitApi = gitApi;
-            _username = gitApi.UserName;
-            _organization = gitApi.Organization;
+
         }
 
         public string GetOwner()
         {
-            return string.IsNullOrWhiteSpace(_organization) ? _username : _organization;
+            var organization = _gitApi.GetOrganization();
+            var username = _gitApi.GetUsername();
+
+            return string.IsNullOrWhiteSpace(organization)
+                ? username
+                : organization;
         }
 
         public IEnumerable<GitRepository> GetRepositories()
         {
-            return null;
+            return _gitApi.GetRepositories(GetOwner());
         }
     }
 }
