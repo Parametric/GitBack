@@ -24,7 +24,7 @@ namespace PPA.GitBack
                 : organization;
         }
 
-        public IEnumerable<GitRepository> GetRepositories()
+        public IEnumerable<IGitRepository> GetRepositories()
         {
             return _gitApi.GetRepositories(GetOwner());
         }

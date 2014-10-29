@@ -1,22 +1,26 @@
-﻿namespace PPA.GitBack
+﻿using System.IO;
+
+namespace PPA.GitBack
 {
-    public class GitBackup
+    public class GitBackup : IGitBackup
     {
-        private readonly GitRepository _repository;
+        private readonly IGitRepository _gitRepository;
 
-        public GitBackup(GitRepository repository)
+        public GitBackup(IGitRepository gitRepository)
         {
-            _repository = repository;
+            _gitRepository = gitRepository;
         }
 
-        public void Clone(string directory)
+        public void Backup(string directory)
         {
-            
-        }
-
-        public void Pull(string directory)
-        {
-            
+            if (_gitRepository.ExistsInDirectory(directory))
+            {
+                _gitRepository.Pull();
+            }
+            else
+            {
+                _gitRepository.Clone();
+            }
         }
     }
 }

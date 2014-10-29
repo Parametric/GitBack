@@ -1,15 +1,21 @@
 ﻿namespace PPA.GitBack
 {
-    public class GitRepository
+    public class GitRepository : IGitRepository
     {
-        public void Backup(string directory)
+
+        public void Pull()
+        {
+            
+        }
+
+        public void Clone()
         {
             
         }
 
         public bool ExistsInDirectory(string directory)
         {
-            return false;
-        }
+            return false; 
+        }    
     }
 }
