@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 
 namespace PPA.GitBack
 {
@@ -7,7 +8,8 @@ namespace PPA.GitBack
         IEnumerable<GitRepository> GetRepositories(string getOwner);
 
         string GetUsername();
-
-        string GetOrganization(); 
+        string GetOrganization();
+        void Pull(string url, DirectoryInfo directory);
+        void Clone(string url, DirectoryInfo directory);
     }
 }

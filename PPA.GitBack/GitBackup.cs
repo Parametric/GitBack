@@ -11,7 +11,7 @@ namespace PPA.GitBack
             _gitRepository = gitRepository;
         }
 
-        public void Backup(string directory)
+        public void Backup(DirectoryInfo directory)
         {
             if (_gitRepository.ExistsInDirectory(directory))
             {

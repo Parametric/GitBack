@@ -1,4 +1,6 @@
-﻿using FizzWare.NBuilder;
+﻿using System.IO;
+using System.Security.Policy;
+using FizzWare.NBuilder;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -48,9 +50,11 @@ namespace PPA.GitBack.Tests
         public void GetRepositories()
         {
             // Arrange
+            var directory = new DirectoryInfo("path");
             var gitApi = Substitute.For<IGitApi>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
+                .All().WithConstructor(() => new GitRepository(gitApi, "url", directory))
                 .Build()
                 ;
             var context = new GitContext(gitApi);
@@ -65,35 +69,68 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void CloneNonExistingRepo()
+        public void GitRepositoryClonesOnNonExistingRepo()
         {
             // Arrange
+            var directory = new DirectoryInfo("path");
             var repository = Substitute.For<IGitRepository>();
-            repository.ExistsInDirectory("directory").Returns(false); 
+            repository.ExistsInDirectory(directory).Returns(false); 
 
             var gitBackup = new GitBackup(repository);
 
             // Act
-            gitBackup.Backup("directory");
+            gitBackup.Backup(directory);
 
             // Asert
             repository.Received().Clone();
         }
 
         [Test]
-        public void PullExistingRepo()
+        public void GitRepositoryPullsOnExistingRepo()
         {
             // Arrange
+            var directory = new DirectoryInfo("path");
             var repository = Substitute.For<IGitRepository>();
-            repository.ExistsInDirectory("directory").Returns(true); 
+            repository.ExistsInDirectory(directory).Returns(true); 
 
             var gitBackup = new GitBackup(repository);
 
             // Act
-            gitBackup.Backup("directory");
+            gitBackup.Backup(directory);
 
             // Asert
             repository.Received().Pull();
+        }
+
+        [Test]
+        public void GitApiCallsPullOnExistingRepo()
+        {
+            // Arrange
+            var directory = new DirectoryInfo("path");
+            var gitApi = Substitute.For<IGitApi>();
+            var repository = new GitRepository(gitApi, "url", directory);
+
+            // Act
+            repository.Pull();
+
+            // Assert
+            gitApi.Received().Pull("url", directory);
+        }
+
+        [Test]
+        public void GitApiCallsClonesOnNonExistingRepo()
+        {
+            // Arrange
+            var directory = new DirectoryInfo("path");
+            var gitApi = Substitute.For<IGitApi>();
+            var repository = new GitRepository(gitApi, "url", directory);
+
+            
+            // Act
+            repository.Clone();
+
+            // Assert
+            gitApi.Received().Clone("url", directory);
         }
     }
 }

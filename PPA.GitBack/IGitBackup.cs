@@ -1,7 +1,9 @@
-﻿namespace PPA.GitBack
+﻿using System.IO;
+
+namespace PPA.GitBack
 {
     public interface IGitBackup
     {
-        void Backup(string directory);
+        void Backup(DirectoryInfo directory);
     }
 }
