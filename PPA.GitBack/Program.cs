@@ -17,8 +17,9 @@ namespace PPA.GitBack
 
         public void Execute()
         {
-            var gitApi = new FakeGitApi(_programOptions.RootGitUrl());
+            var gitApi = new GitApi(_programOptions);
             var gitContext = new GitContext(gitApi);
+            gitContext.BackupAllRepos();
 
         }
     }

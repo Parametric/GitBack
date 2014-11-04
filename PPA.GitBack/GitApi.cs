@@ -5,12 +5,15 @@ namespace PPA.GitBack
 {
     public class GitApi : IGitApi
     {
-        public GitApi(string userName, string organization = null)
+        public GitApi(ProgramOptions programOptions)
         {
-            UserName = userName;
-            Organization = organization;
+            UserName = programOptions.Username;
+            Organization = programOptions.Organization;
+            BackupLocation = programOptions.BackupLocation;
+
         }
 
+        public DirectoryInfo BackupLocation { get; private set; }
         public string UserName { get; private set; }
         public string Organization { get; private set; }
 
@@ -37,6 +40,11 @@ namespace PPA.GitBack
         public string GetOrganization()
         {
             return Organization; 
+        }
+
+        public DirectoryInfo GetBackupLocation()
+        {
+            return BackupLocation; 
         }
     }
 }
