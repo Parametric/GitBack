@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FakeGitApi.cs" />
     <Compile Include="GitApi.cs" />
     <Compile Include="GitBackup.cs" />
     <Compile Include="GitContext.cs" />
@@ -46,6 +47,8 @@
     <Compile Include="IGitApi.cs" />
     <Compile Include="IGitBackup.cs" />
     <Compile Include="IGitRepository.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="ProgramOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

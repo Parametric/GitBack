@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace PPA.GitBack
 {
@@ -26,6 +28,14 @@ namespace PPA.GitBack
         public IEnumerable<IGitRepository> GetRepositories()
         {
             return _gitApi.GetRepositories(GetOwner());
+        }
+
+        public void BackupAllRepos()
+        {
+            foreach (var gitBackup in GetRepositories().Select(gitRepository => new GitBackup(gitRepository)))
+            {
+                gitBackup.Backup(new DirectoryInfo("directory"));
+            }
         }
     }
 }
