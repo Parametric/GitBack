@@ -1,26 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace PPA.GitBack
 {
     public class Program
     {
-        private readonly ProgramOptions _programOptions;
+        private readonly GitContext _gitContext;
 
-        public Program(ProgramOptions programOptions)
+        public Program(GitContext gitContext)
         {
-            _programOptions = programOptions;
+            _gitContext = gitContext;
         }
 
         public void Execute()
         {
-            var gitApi = new GitApi(_programOptions);
-            var gitContext = new GitContext(gitApi);
-            gitContext.BackupAllRepos();
-
+            _gitContext.BackupAllRepos();
         }
     }
 }

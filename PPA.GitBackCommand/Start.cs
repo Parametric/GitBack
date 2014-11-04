@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using CommandLine;
+using Ninject;
 using PPA.GitBack;
 
 namespace PPA.GitBackCommand
@@ -12,13 +13,12 @@ namespace PPA.GitBackCommand
             if (Parser.Default.ParseArguments(args, options))
             {
                 var programOptions = ConvertCommandLineOptionsToProgramOptions(options);
-                var program = new Program(new ProgramOptions()
-                {
-                    Username = options.UserName,
-                    Password = options.Password,
-                    Organization = options.Organization,
-                    BackupLocation = new DirectoryInfo(options.BackupLocation)
-                });
+
+                var kernel = new StandardKernel();
+
+                Bootstrapper.ConfigureNinjectBindings(kernel, programOptions);
+
+                var program = kernel.Get<Program>();
                 program.Execute();
             }
             else
@@ -27,9 +27,15 @@ namespace PPA.GitBackCommand
             }
         }
 
-        static string[] ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
+        static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
         {
-            return null;
+            return new ProgramOptions
+            {
+                Username = commandLineOptions.UserName,
+                Password = commandLineOptions.Password,
+                Organization = commandLineOptions.Organization,
+                BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation)
+            };
         }
     }
 

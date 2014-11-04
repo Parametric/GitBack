@@ -38,5 +38,10 @@ namespace PPA.GitBack
         {
             throw new NotImplementedException();
         }
+
+        public DirectoryInfo GetBackupLocation()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
