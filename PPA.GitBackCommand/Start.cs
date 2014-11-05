@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using CommandLine;
+using CommandLine.Text;
 using Ninject;
 using PPA.GitBack;
 
@@ -56,5 +57,21 @@ namespace PPA.GitBackCommand
         [Option('b', "backup location", Required = true,
             HelpText = "Input backup location path" )]
         public string BackupLocation { get; set; }
+
+        [HelpOption]
+        public string GetUsage()
+        {
+            var application = this.GetType().Assembly;
+            var help = new HelpText
+            {
+                Heading = new HeadingInfo(application.GetName().Name, application.GetName().Version.ToString()),
+                AddDashesToOption = true,
+                MaximumDisplayWidth = 200
+            };
+
+            help.AddOptions(this);
+
+            return help;
+        }
     }
 }

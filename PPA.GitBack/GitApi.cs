@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace PPA.GitBack
@@ -19,12 +20,16 @@ namespace PPA.GitBack
 
         public IEnumerable<GitRepository> GetRepositories(string getOwner)
         {
-            yield break;
+            //yield break;
+            return new List<GitRepository>
+            {
+                new GitRepository(this, "github.com/edeng/repo", new DirectoryInfo("directory"))
+            };
         }
 
         public void Pull(string url, DirectoryInfo directory)
         {
-            
+            Console.WriteLine("git pull: " + "url - " + url  + " directory - " + directory);
         }
 
         public void Clone(string url, DirectoryInfo directory)

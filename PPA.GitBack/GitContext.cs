@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace PPA.GitBack
 {
@@ -30,6 +31,7 @@ namespace PPA.GitBack
 
         public void BackupAllRepos()
         {
+            Console.WriteLine("backing up repos! ");
             foreach (var gitRepository in GetRepositories())
             {
                 var gitBackup = new GitBackup(gitRepository);

@@ -7,16 +7,19 @@ using System.Threading.Tasks;
 
 namespace PPA.GitBack
 {
-    class FakeGitApi : IGitApi
+    public class FakeGitApi : IGitApi
     {
-        public FakeGitApi(string rootGitUrl)
+        public FakeGitApi(ProgramOptions programOptions)
         {
             throw new NotImplementedException();
         }
 
         public IEnumerable<GitRepository> GetRepositories(string getOwner)
         {
-            throw new NotImplementedException();
+            return new List<GitRepository>
+            {
+                new GitRepository(this, "github.com/edeng/repo", new DirectoryInfo("directory"))
+            };
         }
 
         public string GetUsername()
@@ -31,7 +34,7 @@ namespace PPA.GitBack
 
         public void Pull(string url, DirectoryInfo directory)
         {
-            Console.WriteLine("git pull url directory");
+            Console.WriteLine("git pull: " + "url - " + url + " directory - " + directory);
         }
 
         public void Clone(string url, DirectoryInfo directory)
