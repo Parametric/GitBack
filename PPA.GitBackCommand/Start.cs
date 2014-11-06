@@ -55,7 +55,7 @@ namespace PPA.GitBackCommand
         public string Organization { get; set; }
 
         [Option('b', "backup location", Required = true,
-            HelpText = "Input backup location path" )]
+            HelpText = "Input backup location path")]
         public string BackupLocation { get; set; }
 
         [HelpOption]

@@ -54,7 +54,7 @@ namespace PPA.GitBack.Tests
             var gitApi = Substitute.For<IGitApi>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
-                .All().WithConstructor(() => new GitRepository(gitApi, "url", directory))
+                .All().WithConstructor(() => new GitRepository(gitApi, "url", directory, "name"))
                 .Build()
                 ;
             var context = new GitContext(gitApi);
@@ -108,13 +108,13 @@ namespace PPA.GitBack.Tests
             // Arrange
             var directory = new DirectoryInfo("path");
             var gitApi = Substitute.For<IGitApi>();
-            var repository = new GitRepository(gitApi, "url", directory);
+            var repository = new GitRepository(gitApi, "url", directory, "name");
 
             // Act
             repository.Pull();
 
             // Assert
-            gitApi.Received().Pull("url", directory);
+            gitApi.Received().Pull("url", directory, "name");
         }
 
         [Test]
@@ -123,14 +123,14 @@ namespace PPA.GitBack.Tests
             // Arrange
             var directory = new DirectoryInfo("path");
             var gitApi = Substitute.For<IGitApi>();
-            var repository = new GitRepository(gitApi, "url", directory);
+            var repository = new GitRepository(gitApi, "url", directory, "name");
 
             
             // Act
             repository.Clone();
 
             // Assert
-            gitApi.Received().Clone("url", directory);
+            gitApi.Received().Clone("url", directory, "name");
         }
     }
 }

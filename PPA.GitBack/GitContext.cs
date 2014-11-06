@@ -31,7 +31,6 @@ namespace PPA.GitBack
 
         public void BackupAllRepos()
         {
-            Console.WriteLine("backing up repos! ");
             foreach (var gitRepository in GetRepositories())
             {
                 var gitBackup = new GitBackup(gitRepository);

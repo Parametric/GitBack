@@ -9,8 +9,8 @@ namespace PPA.GitBack
 
         string GetUsername();
         string GetOrganization();
-        void Pull(string url, DirectoryInfo directory);
-        void Clone(string url, DirectoryInfo directory);
+        void Pull(string url, DirectoryInfo directory, string name);
+        void Clone(string url, DirectoryInfo directory, string name);
         DirectoryInfo GetBackupLocation();
 
     }

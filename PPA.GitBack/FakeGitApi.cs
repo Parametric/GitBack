@@ -18,7 +18,7 @@ namespace PPA.GitBack
         {
             return new List<GitRepository>
             {
-                new GitRepository(this, "github.com/edeng/repo", new DirectoryInfo("directory"))
+                new GitRepository(this, "github.com/edeng/repo", new DirectoryInfo("directory"), "name")
             };
         }
 
@@ -32,12 +32,12 @@ namespace PPA.GitBack
             throw new NotImplementedException();
         }
 
-        public void Pull(string url, DirectoryInfo directory)
+        public void Pull(string url, DirectoryInfo directory, string name)
         {
             Console.WriteLine("git pull: " + "url - " + url + " directory - " + directory);
         }
 
-        public void Clone(string url, DirectoryInfo directory)
+        public void Clone(string url, DirectoryInfo directory, string name)
         {
             throw new NotImplementedException();
         }
