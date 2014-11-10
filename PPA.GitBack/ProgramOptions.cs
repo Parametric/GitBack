@@ -8,5 +8,6 @@ namespace PPA.GitBack
         public string Password { get; set; }
         public string Organization { get; set; }
         public DirectoryInfo BackupLocation { get; set; }
+        public string PathToGit { get; set; }
     }
 }

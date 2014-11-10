@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace PPA.GitBack
 {
@@ -9,9 +10,7 @@ namespace PPA.GitBack
 
         public GitContext(IGitApi gitApi)
         {
-
             _gitApi = gitApi;
-
         }
 
         public string GetOwner()
@@ -26,7 +25,8 @@ namespace PPA.GitBack
 
         public IEnumerable<IGitRepository> GetRepositories()
         {
-            return _gitApi.GetRepositories(GetOwner());
+            var owner = GetOwner();
+            return _gitApi.GetRepositories(owner);
         }
 
         public void BackupAllRepos()
@@ -34,7 +34,8 @@ namespace PPA.GitBack
             foreach (var gitRepository in GetRepositories())
             {
                 var gitBackup = new GitBackup(gitRepository);
-                gitBackup.Backup(_gitApi.GetBackupLocation());
+                var backupLocation = _gitApi.GetBackupLocation();
+                gitBackup.Backup(backupLocation);
             }
         }
     }

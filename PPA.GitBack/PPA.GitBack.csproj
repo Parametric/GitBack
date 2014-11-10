@@ -43,7 +43,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FakeGitApi.cs" />
     <Compile Include="GitApi.cs" />
     <Compile Include="GitBackup.cs" />
     <Compile Include="GitContext.cs" />

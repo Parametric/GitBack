@@ -10,8 +10,11 @@ namespace PPA.GitBack
 {
     public class GitApi : IGitApi
     {
+        private readonly ProgramOptions _programOptions;
+
         public GitApi(ProgramOptions programOptions)
         {
+            _programOptions = programOptions;
             UserName = programOptions.Username;
             Organization = programOptions.Organization;
             BackupLocation = programOptions.BackupLocation;
@@ -25,18 +28,24 @@ namespace PPA.GitBack
 
         public IEnumerable<GitRepository> GetRepositories(string owner)
         {
-            var connection = new Connection(new ProductHeaderValue("GitBack"),
-                new InMemoryCredentialStore(new Credentials(UserName, Password)));
-
-            var apiConnection = new ApiConnection(connection);
-
-            var repoClient = new RepositoriesClient(apiConnection);
+            var repoClient = CreateGitClient();
 
             var repositories = String.IsNullOrWhiteSpace(Organization) 
                 ? repoClient.GetAllForUser(UserName).Result 
                 : repoClient.GetAllForOrg(Organization).Result;
 
             return repositories.Select(repository => new GitRepository(this, repository.CloneUrl, BackupLocation, repository.Name));
+        }
+
+        private RepositoriesClient CreateGitClient()
+        {
+            var connection = new Connection(new ProductHeaderValue("GitBack"),
+                new InMemoryCredentialStore(new Credentials(UserName, Password)));
+
+            var apiConnection = new ApiConnection(connection);
+
+            var repoClient = new RepositoriesClient(apiConnection);
+            return repoClient;
         }
 
         public void Pull(string url, DirectoryInfo directory, string name)
@@ -64,16 +73,16 @@ namespace PPA.GitBack
             return BackupLocation; 
         }
 
-        private static void WriteToCmd(string url, DirectoryInfo directory, string name, string gitCommand)
+        private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)
         {
             Console.WriteLine("current process: " + gitCommand);
-            var fullDirectory = directory + "\\" + name;
+            var outputDirectory = Path.Combine(directory.FullName, repositoryName);
 
             var cmdprocess = new Process();
             var startinfo = new ProcessStartInfo
             {
-                FileName = @"C:\\Program Files (x86)\\Git\\cmd\\git.exe",
-                Arguments = gitCommand + " " + url + " " + fullDirectory,
+                FileName = _programOptions.PathToGit,
+                Arguments = string.Format("{0} {1} {2}", gitCommand, url, outputDirectory),
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 RedirectStandardInput = true,
