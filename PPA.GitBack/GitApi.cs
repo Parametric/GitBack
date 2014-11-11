@@ -75,12 +75,8 @@ namespace PPA.GitBack
 
         private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)
         {
-<<<<<<< Updated upstream
             Console.WriteLine("current process: " + gitCommand);
             var outputDirectory = Path.Combine(directory.FullName, repositoryName);
-=======
-            var fullDirectory = directory + "\\" + name;
->>>>>>> Stashed changes
 
             var cmdprocess = new Process();
             var startinfo = new ProcessStartInfo
