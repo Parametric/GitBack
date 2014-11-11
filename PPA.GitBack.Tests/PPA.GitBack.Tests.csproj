@@ -48,7 +48,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GitApiTests.cs" />
+    <Compile Include="GitBackupTests.cs" />
     <Compile Include="GitContextTests.cs" />
+    <Compile Include="GitRepositoryTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

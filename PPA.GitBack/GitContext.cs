@@ -1,6 +1,10 @@
+<<<<<<< Updated upstream
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+=======
+﻿using System.Collections.Generic;
+>>>>>>> Stashed changes
 
 namespace PPA.GitBack
 {

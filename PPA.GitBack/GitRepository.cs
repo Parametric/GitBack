@@ -20,6 +20,7 @@ namespace PPA.GitBack
         public void Pull()
         {
             _gitApi.Pull(Url, Directory, Name);
+            
         }
 
         public void Clone()

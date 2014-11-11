@@ -12,6 +12,5 @@ namespace PPA.GitBack
         void Pull(string url, DirectoryInfo directory, string name);
         void Clone(string url, DirectoryInfo directory, string name);
         DirectoryInfo GetBackupLocation();
-
     }
 }

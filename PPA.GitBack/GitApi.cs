@@ -50,7 +50,7 @@ namespace PPA.GitBack
 
         public void Pull(string url, DirectoryInfo directory, string name)
         {
-            WriteToCmd(url, directory, name, "pull"); 
+            WriteToCmd(url, directory, name, "pull");
         }
 
         public void Clone(string url, DirectoryInfo directory, string name)
@@ -75,8 +75,12 @@ namespace PPA.GitBack
 
         private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)
         {
+<<<<<<< Updated upstream
             Console.WriteLine("current process: " + gitCommand);
             var outputDirectory = Path.Combine(directory.FullName, repositoryName);
+=======
+            var fullDirectory = directory + "\\" + name;
+>>>>>>> Stashed changes
 
             var cmdprocess = new Process();
             var startinfo = new ProcessStartInfo
