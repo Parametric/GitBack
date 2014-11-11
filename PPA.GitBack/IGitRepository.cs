@@ -7,5 +7,6 @@ namespace PPA.GitBack
         void Pull();
         void Clone();
         bool ExistsInDirectory(DirectoryInfo directory);
+        void Backup(DirectoryInfo backupDirectory);
     }
 }

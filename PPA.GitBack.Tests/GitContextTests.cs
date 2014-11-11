@@ -69,40 +69,6 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GitRepositoryClonesOnNonExistingRepo()
-        {
-            // Arrange
-            var directory = new DirectoryInfo("path");
-            var repository = Substitute.For<IGitRepository>();
-            repository.ExistsInDirectory(directory).Returns(false); 
-
-            var gitBackup = new GitBackup(repository);
-
-            // Act
-            gitBackup.Backup(directory);
-
-            // Asert
-            repository.Received().Clone();
-        }
-
-        [Test]
-        public void GitRepositoryPullsOnExistingRepo()
-        {
-            // Arrange
-            var directory = new DirectoryInfo("path");
-            var repository = Substitute.For<IGitRepository>();
-            repository.ExistsInDirectory(directory).Returns(true); 
-
-            var gitBackup = new GitBackup(repository);
-
-            // Act
-            gitBackup.Backup(directory);
-
-            // Asert
-            repository.Received().Pull();
-        }
-
-        [Test]
         public void GitApiCallsPullOnExistingRepo()
         {
             // Arrange

@@ -31,9 +31,8 @@ namespace PPA.GitBack
         {
             foreach (var gitRepository in GetRepositories())
             {
-                var gitBackup = new GitBackup(gitRepository);
-                var backupLocation = _gitApi.GetBackupLocation();
-                gitBackup.Backup(backupLocation);
+                var backupDirectory = _gitApi.GetBackupLocation();
+                gitRepository.Backup(backupDirectory);
             }
         }
     }

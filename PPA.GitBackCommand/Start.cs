@@ -15,7 +15,6 @@ namespace PPA.GitBackCommand
             if (Parser.Default.ParseArguments(args, options))
             {
                 var programOptions = ConvertCommandLineOptionsToProgramOptions(options);
-
                 var kernel = new StandardKernel();
 
                 Bootstrapper.ConfigureNinjectBindings(kernel, programOptions);

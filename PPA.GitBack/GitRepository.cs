@@ -33,6 +33,18 @@ namespace PPA.GitBack
             var fullDirectory = Path.Combine(directory.FullName, Name);
             var repoDirectory = new DirectoryInfo(fullDirectory);
             return repoDirectory.Exists;
-        }    
+        }
+
+        public void Backup(DirectoryInfo backupDirectory)
+        {
+            if (ExistsInDirectory(backupDirectory))
+            {
+                Pull();
+            }
+            else
+            {
+                Clone();
+            }
+        }
     }
 }
