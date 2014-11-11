@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using CommandLine;
 using CommandLine.Text;
 using Ninject;
@@ -22,10 +23,6 @@ namespace PPA.GitBackCommand
                 var program = kernel.Get<Program>();
                 program.Execute();
             }
-            else
-            {
-                // TODO: Display Error
-            }
         }
 
         static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
@@ -35,7 +32,8 @@ namespace PPA.GitBackCommand
                 Username = commandLineOptions.UserName,
                 Password = commandLineOptions.Password,
                 Organization = commandLineOptions.Organization,
-                BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation)
+                BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
+                PathToGit = commandLineOptions.PathToGit
             };
         }
     }
@@ -57,6 +55,10 @@ namespace PPA.GitBackCommand
         [Option('b', "backup location", Required = true,
             HelpText = "Input backup location path")]
         public string BackupLocation { get; set; }
+
+        [Option('g', "git.exe location", Required = true,
+            HelpText = "Input the location of your Git executable")]
+        public string PathToGit { get; set; }
 
         [HelpOption]
         public string GetUsage()

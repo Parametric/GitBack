@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ninject;
-using Ninject.Modules;
+﻿using Ninject;
 using PPA.GitBack;
 
 namespace PPA.GitBackCommand
@@ -13,12 +7,8 @@ namespace PPA.GitBackCommand
     {
         public static void ConfigureNinjectBindings(IKernel kernel, ProgramOptions programOptions)
         {
-            var modules = new List<NinjectModule>
-            {
-                new ProgramModule(programOptions),
-            };
-
-            kernel.Load(modules);
+            kernel.Bind<IGitApi>().ToMethod(context => new GitApi(programOptions));
+            kernel.Bind<IGitContext>().ToMethod(context => new GitContext(new GitApi(programOptions)));
         }
     }
 }

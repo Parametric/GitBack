@@ -28,24 +28,14 @@ namespace PPA.GitBack
 
         public IEnumerable<GitRepository> GetRepositories(string owner)
         {
-            var repoClient = CreateGitClient();
+            var clientInitializer = new GitClientInitializer();
+            var repoClient = clientInitializer.CreateGitClient(UserName, Password); 
 
             var repositories = String.IsNullOrWhiteSpace(Organization) 
                 ? repoClient.GetAllForUser(UserName).Result 
                 : repoClient.GetAllForOrg(Organization).Result;
 
             return repositories.Select(repository => new GitRepository(this, repository.CloneUrl, BackupLocation, repository.Name));
-        }
-
-        private RepositoriesClient CreateGitClient()
-        {
-            var connection = new Connection(new ProductHeaderValue("GitBack"),
-                new InMemoryCredentialStore(new Credentials(UserName, Password)));
-
-            var apiConnection = new ApiConnection(connection);
-
-            var repoClient = new RepositoriesClient(apiConnection);
-            return repoClient;
         }
 
         public void Pull(string url, DirectoryInfo directory, string name)
@@ -75,7 +65,6 @@ namespace PPA.GitBack
 
         private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)
         {
-            Console.WriteLine("current process: " + gitCommand);
             var outputDirectory = Path.Combine(directory.FullName, repositoryName);
 
             var cmdprocess = new Process();

@@ -3,9 +3,9 @@ namespace PPA.GitBack
 {
     public class Program
     {
-        private readonly GitContext _gitContext;
+        private readonly IGitContext _gitContext;
 
-        public Program(GitContext gitContext)
+        public Program(IGitContext gitContext)
         {
             _gitContext = gitContext;
         }

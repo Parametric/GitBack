@@ -2,7 +2,7 @@
 
 namespace PPA.GitBack
 {
-    public class GitContext
+    public class GitContext : IGitContext
     {
         private readonly IGitApi _gitApi;
 

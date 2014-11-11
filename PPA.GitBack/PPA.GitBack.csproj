@@ -45,10 +45,13 @@
   <ItemGroup>
     <Compile Include="GitApi.cs" />
     <Compile Include="GitBackup.cs" />
+    <Compile Include="GitClientInitializer.cs" />
     <Compile Include="GitContext.cs" />
     <Compile Include="GitRepository.cs" />
     <Compile Include="IGitApi.cs" />
     <Compile Include="IGitBackup.cs" />
+    <Compile Include="IGitClientInitializer.cs" />
+    <Compile Include="IGitContext.cs" />
     <Compile Include="IGitRepository.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramOptions.cs" />

@@ -1,6 +1,12 @@
-﻿using System.IO;
-using FizzWare.NBuilder;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using NSubstitute;
+using NSubstitute.Core;
 using NUnit.Framework;
+using Octokit;
 
 namespace PPA.GitBack.Tests
 {
@@ -73,8 +79,19 @@ namespace PPA.GitBack.Tests
 
             // Assert
             Assert.That(result, Is.True);
-        }        
+        }
+
+        [Test]
+        public void GetsRepositoriesFromCorrectAccount()
+        {
+            // Arrange
+            var repoClient = Substitute.For<IRepositoriesClient>();
 
 
+
+            // Act
+
+            // Assert
+        }
     }
 }

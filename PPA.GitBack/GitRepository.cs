@@ -30,7 +30,8 @@ namespace PPA.GitBack
 
         public bool ExistsInDirectory(DirectoryInfo directory)
         {
-            var repoDirectory = new DirectoryInfo(directory + "\\" + Name);
+            var fullDirectory = Path.Combine(directory.FullName, Name);
+            var repoDirectory = new DirectoryInfo(fullDirectory);
             return repoDirectory.Exists;
         }    
     }

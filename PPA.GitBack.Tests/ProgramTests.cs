@@ -10,7 +10,7 @@ namespace PPA.GitBack.Tests
         public void GitContextBacksUpReposWhenExecuteCalled()
         {
             // Arrange
-            var gitContext = Substitute.For<GitContext>();
+            var gitContext = Substitute.For<IGitContext>();
             var program = new Program(gitContext); 
             
             // Act
