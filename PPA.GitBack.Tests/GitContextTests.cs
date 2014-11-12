@@ -9,42 +9,42 @@ namespace PPA.GitBack.Tests
     [TestFixture]
     public class GitContextTests
     {
-        [Test]
-        [TestCase(null)]
-        [TestCase("")]
-        [TestCase("        ")]
-        public void Ctor_WithoutOrganization(string organization)
-        {
-            // Arrange
-            var gitApi = Substitute.For<IGitApi>();
-            gitApi.GetUsername().Returns("username");
-            gitApi.GetOrganization().Returns(organization); 
+        //[Test]
+        //[TestCase(null)]
+        //[TestCase("")]
+        //[TestCase("        ")]
+        //public void Ctor_WithoutOrganization(string organization)
+        //{
+        //    // Arrange
+        //    var gitApi = Substitute.For<IGitApi>();
+        //    gitApi.GetUsername().Returns("username");
+        //    gitApi.GetOrganization().Returns(organization); 
 
-            var context = new GitContext(gitApi);
+        //    var context = new GitContext(gitApi);
 
-            // Act
-            var owner = context.GetOwner();
+        //    // Act
+        //    var owner = context.GetOwner();
 
-            // Assert
-            Assert.That(owner, Is.EqualTo("username"));
-        }
+        //    // Assert
+        //    Assert.That(owner, Is.EqualTo("username"));
+        //}
 
-        [Test]
-        public void Ctor_WithOrganization()
-        {
-            // Arrange
-            var gitApi = Substitute.For<IGitApi>();
-            gitApi.GetUsername().Returns("username");
-            gitApi.GetOrganization().Returns("organization"); 
+        //[Test]
+        //public void Ctor_WithOrganization()
+        //{
+        //    // Arrange
+        //    var gitApi = Substitute.For<IGitApi>();
+        //    gitApi.GetUsername().Returns("username");
+        //    gitApi.GetOrganization().Returns("organization"); 
 
-            var context = new GitContext(gitApi);
+        //    var context = new GitContext(gitApi);
 
-            // Act
-            var owner = context.GetOwner();
+        //    // Act
+        //    var owner = context.GetOwner();
 
-            // Assert
-            Assert.That(owner, Is.EqualTo("organization"));
-        }
+        //    // Assert
+        //    Assert.That(owner, Is.EqualTo("organization"));
+        //}
 
         [Test]
         public void GetRepositories()
@@ -59,44 +59,13 @@ namespace PPA.GitBack.Tests
                 ;
             var context = new GitContext(gitApi);
 
-            gitApi.GetRepositories(context.GetOwner()).Returns(allRepositories);
+            gitApi.GetRepositories().Returns(allRepositories);
 
             // Act
             var repositories = context.GetRepositories();
 
             // Assert
             Assert.That(repositories, Is.EquivalentTo(allRepositories));
-        }
-
-        [Test]
-        public void GitApiCallsPullOnExistingRepo()
-        {
-            // Arrange
-            var directory = new DirectoryInfo("path");
-            var gitApi = Substitute.For<IGitApi>();
-            var repository = new GitRepository(gitApi, "url", directory, "name");
-
-            // Act
-            repository.Pull();
-
-            // Assert
-            gitApi.Received().Pull("url", directory, "name");
-        }
-
-        [Test]
-        public void GitApiCallsClonesOnNonExistingRepo()
-        {
-            // Arrange
-            var directory = new DirectoryInfo("path");
-            var gitApi = Substitute.For<IGitApi>();
-            var repository = new GitRepository(gitApi, "url", directory, "name");
-
-            
-            // Act
-            repository.Clone();
-
-            // Assert
-            gitApi.Received().Clone("url", directory, "name");
         }
     }
 }

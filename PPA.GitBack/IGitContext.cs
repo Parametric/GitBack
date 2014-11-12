@@ -8,7 +8,6 @@ namespace PPA.GitBack
 {
     public interface IGitContext
     {
-        string GetOwner();
         IEnumerable<IGitRepository> GetRepositories();
         void BackupAllRepos();
     }

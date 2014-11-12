@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 using NSubstitute;
-using NSubstitute.Core;
 using NUnit.Framework;
 using Octokit;
 
@@ -25,7 +21,9 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var gitApi = new GitApi(programOptions); 
+            var clientInitializer = Substitute.For<IGitClientInitializer>();
+
+            var gitApi = new GitApi(programOptions, clientInitializer); 
 
             // Act
             var username = gitApi.GetUsername();
@@ -46,8 +44,9 @@ namespace PPA.GitBack.Tests
                 BackupLocation = new DirectoryInfo("backup"),
                 Password = "password"
             };
+            var clientInitializer = Substitute.For<IGitClientInitializer>();
 
-            var gitApi = new GitApi(programOptions);
+            var gitApi = new GitApi(programOptions, clientInitializer);
 
             // Act
             var organization = gitApi.GetOrganization();
@@ -71,7 +70,9 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var gitApi = new GitApi(programOptions);
+            var clientInitializer = Substitute.For<IGitClientInitializer>();
+
+            var gitApi = new GitApi(programOptions, clientInitializer);
 
             // Act
             var backup = gitApi.GetBackupLocation();
@@ -85,13 +86,64 @@ namespace PPA.GitBack.Tests
         public void GetsRepositoriesFromCorrectAccount()
         {
             // Arrange
+            var clientInitializer = Substitute.For<IGitClientInitializer>();
             var repoClient = Substitute.For<IRepositoriesClient>();
 
+            repoClient.GetAllForUser("username").Result.Returns(new List<Repository>()
+                {
+                    new Repository()
+                    {
+                        CloneUrl = "url1",
+                        Name = "name1"
+                    }, 
+
+                    new Repository()
+                    {
+                        CloneUrl = "url2",
+                        Name = "name2"
+                    }
+                });
+
+            var backupLocation = new DirectoryInfo("backup"); 
+            var programOptions = new ProgramOptions()
+            {
+                Username = "username",
+                Organization = "organization",
+                BackupLocation = backupLocation,
+                Password = "password"
+            };
+
+            clientInitializer.CreateGitClient("username", "password")
+                .GetAllForUser("username")
+                .Result.Returns(new List<Repository>()
+                {
+                    new Repository()
+                    {
+                        CloneUrl = "url1",
+                        Name = "name1"
+                    }, 
+
+                    new Repository()
+                    {
+                        CloneUrl = "url2",
+                        Name = "name2"
+                    }
+                });
+
+            var gitApi = new GitApi(programOptions, clientInitializer);
+
+            var expectedRepositories = new List<GitRepository>()
+            {
+                new GitRepository(gitApi, "url1", backupLocation, "name1"),
+                new GitRepository(gitApi, "url2", backupLocation, "name2")
+            };
 
 
             // Act
+            var repositories = gitApi.GetRepositories();
 
             // Assert
+            Assert.That(repositories, Is.EquivalentTo(expectedRepositories));
         }
     }
 }

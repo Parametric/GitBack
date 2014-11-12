@@ -3,7 +3,7 @@ using Octokit.Internal;
 
 namespace PPA.GitBack
 {
-    class GitClientInitializer : IGitClientInitializer
+    public class GitClientInitializer : IGitClientInitializer
     {
         public RepositoriesClient CreateGitClient(string username, string password)
         {

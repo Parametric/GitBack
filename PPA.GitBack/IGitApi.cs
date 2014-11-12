@@ -5,12 +5,12 @@ namespace PPA.GitBack
 {
     public interface IGitApi
     {
-        IEnumerable<GitRepository> GetRepositories(string getOwner);
-
         string GetUsername();
         string GetOrganization();
+        DirectoryInfo GetBackupLocation();
+        IEnumerable<GitRepository> GetRepositories();
+
         void Pull(string url, DirectoryInfo directory, string name);
         void Clone(string url, DirectoryInfo directory, string name);
-        DirectoryInfo GetBackupLocation();
     }
 }

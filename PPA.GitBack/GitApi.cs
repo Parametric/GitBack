@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Octokit;
-using Octokit.Internal;
 
 namespace PPA.GitBack
 {
     public class GitApi : IGitApi
     {
         private readonly ProgramOptions _programOptions;
+        private readonly IGitClientInitializer _clientInitializer;
 
-        public GitApi(ProgramOptions programOptions)
+        public GitApi(ProgramOptions programOptions, IGitClientInitializer clientInitializer)
         {
+            _clientInitializer = clientInitializer;
             _programOptions = programOptions;
             UserName = programOptions.Username;
             Organization = programOptions.Organization;
@@ -26,10 +26,9 @@ namespace PPA.GitBack
         public string Organization { get; private set; }
         public string Password { get; private set; }
 
-        public IEnumerable<GitRepository> GetRepositories(string owner)
+        public IEnumerable<GitRepository> GetRepositories()
         {
-            var clientInitializer = new GitClientInitializer();
-            var repoClient = clientInitializer.CreateGitClient(UserName, Password); 
+            var repoClient = _clientInitializer.CreateGitClient(UserName, Password); 
 
             var repositories = String.IsNullOrWhiteSpace(Organization) 
                 ? repoClient.GetAllForUser(UserName).Result 
