@@ -52,6 +52,7 @@
     <Compile Include="IGitContext.cs" />
     <Compile Include="IGitRepository.cs" />
     <Compile Include="IProcessRunner.cs" />
+    <Compile Include="ProcessRunner.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

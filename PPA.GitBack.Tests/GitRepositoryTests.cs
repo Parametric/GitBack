@@ -1,5 +1,4 @@
-﻿using System.IO;
-using NSubstitute;
+﻿using NSubstitute;
 using NUnit.Framework;
 
 namespace PPA.GitBack.Tests
@@ -13,7 +12,7 @@ namespace PPA.GitBack.Tests
             // Arrange
             var api = Substitute.For<IGitApi>();
             const string name = "name";
-            var gitRepository = new GitRepository(api, "url", new DirectoryInfo("directory"), name);
+            var gitRepository = new GitRepository(api, "url", name);
 
             // Act
             var result = gitRepository.GetName();
@@ -23,27 +22,12 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GetDirectory_ReturnsCorrectDirectory()
-        {
-            // Arrange
-            var api = Substitute.For<IGitApi>();
-            var directory = new DirectoryInfo("directory");
-            var gitRepository = new GitRepository(api, "url", directory, "name");
-        
-            // Act
-            var result = gitRepository.GetDirectory();
-
-            // Assert
-            Assert.That(result, Is.EqualTo(directory));
-        }
-
-        [Test]
         public void GetUrl_ReturnsCorrectUrl()
         {
             // Arrange
             var api = Substitute.For<IGitApi>();
             const string url = "url";
-            var gitRepository = new GitRepository(api, url, new DirectoryInfo("directory"), "name");
+            var gitRepository = new GitRepository(api, url, "name");
 
             // Act
             var result = gitRepository.GetUrl();
@@ -57,17 +41,16 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
-            var directory = new DirectoryInfo("directory");
             const string name = "repository name";
             const string url = "url";
 
-            var repository = new GitRepository(gitApi, url, directory, name); 
+            var repository = new GitRepository(gitApi, url, name); 
 
             // Act
             repository.Pull();
 
             // Assert
-            gitApi.Received().Pull(url, directory, name);
+            gitApi.Received().Pull(url, name);
         }
 
         [Test]
@@ -75,17 +58,16 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
-            var directory = new DirectoryInfo("directory");
             const string name = "repository name";
             const string url = "url";
 
-            var repository = new GitRepository(gitApi, url, directory, name);
+            var repository = new GitRepository(gitApi, url, name);
 
             // Act
             repository.Clone();
 
             // Assert
-            gitApi.Received().Clone(url, directory, name);
+            gitApi.Received().Clone(url, name);
         }
     }
 }

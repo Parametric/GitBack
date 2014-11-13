@@ -13,11 +13,10 @@ namespace PPA.GitBack.Tests
         public void GetRepositories_ReturnsCorrectRepositores()
         {
             // Arrange
-            var directory = new DirectoryInfo("path");
             var gitApi = Substitute.For<IGitApi>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
-                .All().WithConstructor(() => new GitRepository(gitApi, "url", directory, "name"))
+                .All().WithConstructor(() => new GitRepository(gitApi, "url", "name"))
                 .Build()
                 ;
             var context = new GitContext(gitApi);

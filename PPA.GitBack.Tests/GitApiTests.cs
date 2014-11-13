@@ -181,7 +181,6 @@ namespace PPA.GitBack.Tests
             {
                 var expected = allRepositories[i];
                 var actual = results[i];
-                Assert.That(actual.GetDirectory().Name, Is.EqualTo(programOptions.BackupLocation.Name));
                 Assert.That(actual.GetName(), Is.EqualTo(expected.Name));
                 Assert.That(actual.GetUrl(), Is.EqualTo(expected.CloneUrl));
             }
@@ -206,7 +205,7 @@ namespace PPA.GitBack.Tests
             var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
 
             // Act
-            gitApi.Pull("http://some.url.com", programOptions.BackupLocation, "SomeRepo");
+            gitApi.Pull("http://some.url.com", "SomeRepo");
 
             // Assert
             processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "pull")));
@@ -231,7 +230,7 @@ namespace PPA.GitBack.Tests
             var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
 
             // Act
-            gitApi.Clone("http://some.url.com", programOptions.BackupLocation, "SomeRepo");
+            gitApi.Clone("http://some.url.com", "SomeRepo");
 
             // Assert
             processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "clone")));

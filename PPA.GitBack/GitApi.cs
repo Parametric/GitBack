@@ -51,17 +51,17 @@ namespace PPA.GitBack
                 ? repoClient.GetAllForUser(Username).Result 
                 : repoClient.GetAllForOrg(Organization).Result;
 
-            return repositories.Select(repository => new GitRepository(this, repository.CloneUrl, BackupLocation, repository.Name));
+            return repositories.Select(repository => new GitRepository(this, repository.CloneUrl, repository.Name));
         }
 
-        public void Pull(string url, DirectoryInfo directory, string name)
+        public void Pull(string url, string name)
         {
-            WriteToCmd(url, directory, name, "pull");
+            WriteToCmd(url, BackupLocation, name, "pull");
         }
 
-        public void Clone(string url, DirectoryInfo directory, string name)
+        public void Clone(string url, string name)
         {
-            WriteToCmd(url, directory, name, "clone");
+            WriteToCmd(url, BackupLocation, name, "clone");
         }
 
         private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)

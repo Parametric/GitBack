@@ -5,14 +5,12 @@ namespace PPA.GitBack
     public class GitRepository : IGitRepository
     {
         public string Url { get; set; }
-        public DirectoryInfo Directory { get; set; }
         public string Name { get; set; }
         private readonly IGitApi _gitApi;
 
-        public GitRepository(IGitApi gitApi, string url, DirectoryInfo directory, string name)
+        public GitRepository(IGitApi gitApi, string url, string name)
         {
             Url = url;
-            Directory = directory;
             _gitApi = gitApi;
             Name = name;
         }
@@ -22,11 +20,6 @@ namespace PPA.GitBack
             return Name;
         }
 
-        public DirectoryInfo GetDirectory()
-        {
-            return Directory;
-        }
-
         public string GetUrl()
         {
             return Url;
@@ -34,13 +27,13 @@ namespace PPA.GitBack
 
         public void Pull()
         {
-            _gitApi.Pull(Url, Directory, Name);
+            _gitApi.Pull(Url, Name);
             
         }
 
         public void Clone()
         {
-            _gitApi.Clone(Url, Directory, Name);
+            _gitApi.Clone(Url, Name);
         }
 
         public bool ExistsInDirectory(DirectoryInfo directory)

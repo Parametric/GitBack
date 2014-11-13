@@ -10,7 +10,7 @@ namespace PPA.GitBack
         DirectoryInfo GetBackupLocation();
         IEnumerable<IGitRepository> GetRepositories();
 
-        void Pull(string url, DirectoryInfo directory, string name);
-        void Clone(string url, DirectoryInfo directory, string name);
+        void Pull(string url, string name);
+        void Clone(string url, string name);
     }
 }
