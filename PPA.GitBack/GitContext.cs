@@ -11,7 +11,7 @@ namespace PPA.GitBack
             _gitApi = gitApi;
         }
 
-        public IEnumerable<IGitRepository> GetRepositories()
+        public IEnumerable<GitRepository> GetRepositories()
         {
             return _gitApi.GetRepositories();
         }

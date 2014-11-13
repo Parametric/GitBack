@@ -35,14 +35,16 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var api = Substitute.For<IGitApi>();
+            const string url = "url";
+            const string name = "name";
             var context = new GitContext(api);
             var backupLocation = new DirectoryInfo("backup");
 
-            var allRepositories = new List<IGitRepository>
+            var allRepositories = new List<GitRepository>
             {
-                Substitute.For<IGitRepository>(),
-                Substitute.For<IGitRepository>(),
-                Substitute.For<IGitRepository>()
+                Substitute.For<GitRepository>(api, url, name),
+                Substitute.For<GitRepository>(api, url, name),
+                Substitute.For<GitRepository>(api, url, name)
             };
 
             api.GetRepositories().Returns(allRepositories);

@@ -9,15 +9,15 @@ namespace PPA.GitBack
     public class GitApi : IGitApi
     {
         private readonly ProgramOptions _programOptions;
-        private readonly IGitClientFactory _clientFactory;
-        private readonly IProcessRunner _processRunner;
+        private readonly GitClientFactory _clientFactory;
+        private readonly ProcessRunner _processRunner;
 
         public DirectoryInfo BackupLocation { get; private set; }
         public string Username { get; private set; }
         public string Organization { get; private set; }
         public string Password { get; private set; }
 
-        public GitApi(ProgramOptions programOptions, IGitClientFactory clientFactory, IProcessRunner processRunner)
+        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner)
         {
             _clientFactory = clientFactory;
             _processRunner = processRunner;
@@ -43,7 +43,7 @@ namespace PPA.GitBack
             return BackupLocation;
         }
 
-        public IEnumerable<IGitRepository> GetRepositories()
+        public IEnumerable<GitRepository> GetRepositories()
         {
             var repoClient = _clientFactory.CreateGitClient(Username, Password); 
 

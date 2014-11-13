@@ -25,7 +25,7 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
 
             var gitApi = new GitApi(programOptions, clientInitializer, null); 
 
@@ -48,7 +48,7 @@ namespace PPA.GitBack.Tests
                 BackupLocation = new DirectoryInfo("backup"),
                 Password = "password"
             };
-            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
 
             var gitApi = new GitApi(programOptions, clientInitializer, null);
 
@@ -74,7 +74,7 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
 
             var gitApi = new GitApi(programOptions, clientInitializer, null);
 
@@ -93,7 +93,7 @@ namespace PPA.GitBack.Tests
         public void GetRepositories_FromUserAccount_WhenOrganizationIsNotSpecified(string organization)
         {
             // Arrange
-            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
             const string username = "username";
             const string password = "password";
             var repoClient = Substitute.For<IRepositoriesClient>();
@@ -121,7 +121,7 @@ namespace PPA.GitBack.Tests
         public void GetRepositories_FromOrganization_WhenOrganizationIsSpecified()
         {
             // Arrange
-            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
             const string username = "username";
             const string password = "password";
             var repoClient = Substitute.For<IRepositoriesClient>();
@@ -149,7 +149,7 @@ namespace PPA.GitBack.Tests
         public void GetRepositories_MapsResultsToGitRepositoryObjects()
         {
             // Arrange
-            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
             const string username = "username";
             const string password = "password";
             var repoClient = Substitute.For<IRepositoriesClient>();
@@ -190,8 +190,8 @@ namespace PPA.GitBack.Tests
         public void Pull()
         {
             // Arrange
-            var clientInitializer = Substitute.For<IGitClientFactory>();
-            var processRunner = Substitute.For<IProcessRunner>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var processRunner = Substitute.For<ProcessRunner>();
 
             var programOptions = new ProgramOptions()
             {
@@ -215,8 +215,8 @@ namespace PPA.GitBack.Tests
         public void Clone()
         {
             // Arrange
-            var clientInitializer = Substitute.For<IGitClientFactory>();
-            var processRunner = Substitute.For<IProcessRunner>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var processRunner = Substitute.For<ProcessRunner>();
 
             var programOptions = new ProgramOptions()
             {

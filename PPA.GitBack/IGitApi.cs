@@ -8,7 +8,7 @@ namespace PPA.GitBack
         string GetUsername();
         string GetOrganization();
         DirectoryInfo GetBackupLocation();
-        IEnumerable<IGitRepository> GetRepositories();
+        IEnumerable<GitRepository> GetRepositories();
 
         void Pull(string url, string name);
         void Clone(string url, string name);

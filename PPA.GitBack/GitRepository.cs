@@ -2,7 +2,7 @@
 
 namespace PPA.GitBack
 {
-    public class GitRepository : IGitRepository
+    public class GitRepository
     {
         public string Url { get; set; }
         public string Name { get; set; }

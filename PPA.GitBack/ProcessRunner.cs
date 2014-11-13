@@ -2,9 +2,9 @@
 
 namespace PPA.GitBack
 {
-    public class ProcessRunner : IProcessRunner
+    public class ProcessRunner
     {
-        public void Run(ProcessStartInfo startInfo)
+        public virtual void Run(ProcessStartInfo startInfo)
         {
             var cmdprocess = new Process {StartInfo = startInfo};
             cmdprocess.Start();
