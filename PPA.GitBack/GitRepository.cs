@@ -17,6 +17,21 @@ namespace PPA.GitBack
             Name = name;
         }
 
+        public string GetName()
+        {
+            return Name;
+        }
+
+        public DirectoryInfo GetDirectory()
+        {
+            return Directory;
+        }
+
+        public string GetUrl()
+        {
+            return Url;
+        }
+
         public void Pull()
         {
             _gitApi.Pull(Url, Directory, Name);
@@ -30,8 +45,8 @@ namespace PPA.GitBack
 
         public bool ExistsInDirectory(DirectoryInfo directory)
         {
-            var fullDirectory = Path.Combine(directory.FullName, Name);
-            var repoDirectory = new DirectoryInfo(fullDirectory);
+            var fullPath = Path.Combine(directory.FullName, Name);
+            var repoDirectory = new DirectoryInfo(fullPath);
             return repoDirectory.Exists;
         }
 

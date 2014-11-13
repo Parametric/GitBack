@@ -14,7 +14,7 @@ namespace PPA.GitBack.Tests
     class GitApiTests
     {
         [Test]
-        public void GetUsernameReturnsCorrectUsername()
+        public void GetUsername_ReturnsCorrectUsername()
         {
             // Arrange
             var programOptions = new ProgramOptions()
@@ -38,7 +38,7 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GetOrganizationReturnsCorrectOrganization()
+        public void GetOrganization_ReturnsCorrectOrganization()
         {
             // Arrange
             var programOptions = new ProgramOptions()
@@ -61,7 +61,7 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GetBackupLocationReturnsCorrectBackupLocation()
+        public void GetBackupLocation_ReturnsCorrectBackupLocation()
         {
             // Arrange
             var backupLocation = new DirectoryInfo("backup"); 
@@ -87,7 +87,10 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GetRepositories_FromUserAccount_WhenOrganizationIsNotSpecified()
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("        ")]
+        public void GetRepositories_FromUserAccount_WhenOrganizationIsNotSpecified(string organization)
         {
             // Arrange
             var clientInitializer = Substitute.For<IGitClientFactory>();
@@ -101,7 +104,7 @@ namespace PPA.GitBack.Tests
             {
                 Username = username,
                 Password = password,
-                Organization = null,
+                Organization = organization,
                 BackupLocation = backupLocation,
             };
 
@@ -178,9 +181,9 @@ namespace PPA.GitBack.Tests
             {
                 var expected = allRepositories[i];
                 var actual = results[i];
-                Assert.That(actual.Directory.Name, Is.EqualTo(programOptions.BackupLocation.Name));
-                Assert.That(actual.Name, Is.EqualTo(expected.Name));
-                Assert.That(actual.Url, Is.EqualTo(expected.CloneUrl));
+                Assert.That(actual.GetDirectory().Name, Is.EqualTo(programOptions.BackupLocation.Name));
+                Assert.That(actual.GetName(), Is.EqualTo(expected.Name));
+                Assert.That(actual.GetUrl(), Is.EqualTo(expected.CloneUrl));
             }
         }
 
@@ -206,14 +209,44 @@ namespace PPA.GitBack.Tests
             gitApi.Pull("http://some.url.com", programOptions.BackupLocation, "SomeRepo");
 
             // Assert
-            processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions)));
+            processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "pull")));
         }
 
-        private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions)
+        [Test]
+        public void Clone()
         {
-            const string expectedArguments = @"pull http://some.url.com C:\git\GitBack\PPA.GitBack.Tests\bin\Debug\backup\SomeRepo";
+            // Arrange
+            var clientInitializer = Substitute.For<IGitClientFactory>();
+            var processRunner = Substitute.For<IProcessRunner>();
+
+            var programOptions = new ProgramOptions()
+            {
+                Username = "username",
+                Password = "password",
+                Organization = null,
+                BackupLocation = new DirectoryInfo("backup"),
+                PathToGit = "//some/path/to/git.exe"
+            };
+
+            var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
+
+            // Act
+            gitApi.Clone("http://some.url.com", programOptions.BackupLocation, "SomeRepo");
+
+            // Assert
+            processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "clone")));
+        }
+
+        private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions, string gitCommand)
+        {
+            var expectedArguments = gitCommand + @" http://some.url.com C:\git\GitBack\PPA.GitBack.Tests\bin\Debug\backup\SomeRepo";
             Assert.That(arg.Arguments, Is.EqualTo(expectedArguments), "Arguments");
             Assert.That(arg.WindowStyle, Is.EqualTo(ProcessWindowStyle.Hidden));
+            Assert.That(arg.CreateNoWindow, Is.True);
+            Assert.That(arg.RedirectStandardInput, Is.True);
+            Assert.That(arg.RedirectStandardOutput, Is.True);
+            Assert.That(arg.UseShellExecute, Is.False);
+
 
             var result = arg.FileName == programOptions.PathToGit
                                               && arg.Arguments == expectedArguments

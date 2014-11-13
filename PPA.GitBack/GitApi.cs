@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace PPA.GitBack
 {
@@ -13,28 +12,43 @@ namespace PPA.GitBack
         private readonly IGitClientFactory _clientFactory;
         private readonly IProcessRunner _processRunner;
 
+        public DirectoryInfo BackupLocation { get; private set; }
+        public string Username { get; private set; }
+        public string Organization { get; private set; }
+        public string Password { get; private set; }
+
         public GitApi(ProgramOptions programOptions, IGitClientFactory clientFactory, IProcessRunner processRunner)
         {
             _clientFactory = clientFactory;
             _processRunner = processRunner;
             _programOptions = programOptions;
-            UserName = programOptions.Username;
+            Username = programOptions.Username;
             Organization = programOptions.Organization;
             BackupLocation = programOptions.BackupLocation;
             Password = programOptions.Password;
         }
 
-        public DirectoryInfo BackupLocation { get; private set; }
-        public string UserName { get; private set; }
-        public string Organization { get; private set; }
-        public string Password { get; private set; }
-
-        public IEnumerable<GitRepository> GetRepositories()
+        public string GetUsername()
         {
-            var repoClient = _clientFactory.CreateGitClient(UserName, Password); 
+            return Username;
+        }
+
+        public string GetOrganization()
+        {
+            return Organization;
+        }
+
+        public DirectoryInfo GetBackupLocation()
+        {
+            return BackupLocation;
+        }
+
+        public IEnumerable<IGitRepository> GetRepositories()
+        {
+            var repoClient = _clientFactory.CreateGitClient(Username, Password); 
 
             var repositories = String.IsNullOrWhiteSpace(Organization) 
-                ? repoClient.GetAllForUser(UserName).Result 
+                ? repoClient.GetAllForUser(Username).Result 
                 : repoClient.GetAllForOrg(Organization).Result;
 
             return repositories.Select(repository => new GitRepository(this, repository.CloneUrl, BackupLocation, repository.Name));
@@ -48,21 +62,6 @@ namespace PPA.GitBack
         public void Clone(string url, DirectoryInfo directory, string name)
         {
             WriteToCmd(url, directory, name, "clone");
-        }
-
-        public string GetUsername()
-        {
-            return UserName; 
-        }
-
-        public string GetOrganization()
-        {
-            return Organization; 
-        }
-
-        public DirectoryInfo GetBackupLocation()
-        {
-            return BackupLocation; 
         }
 
         private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)

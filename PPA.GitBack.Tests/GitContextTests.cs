@@ -1,5 +1,5 @@
-﻿using System.IO;
-using System.Security.Policy;
+﻿using System.Collections.Generic;
+using System.IO;
 using FizzWare.NBuilder;
 using NSubstitute;
 using NUnit.Framework;
@@ -9,45 +9,8 @@ namespace PPA.GitBack.Tests
     [TestFixture]
     public class GitContextTests
     {
-        //[Test]
-        //[TestCase(null)]
-        //[TestCase("")]
-        //[TestCase("        ")]
-        //public void Ctor_WithoutOrganization(string organization)
-        //{
-        //    // Arrange
-        //    var gitApi = Substitute.For<IGitApi>();
-        //    gitApi.GetUsername().Returns("username");
-        //    gitApi.GetOrganization().Returns(organization); 
-
-        //    var context = new GitContext(gitApi);
-
-        //    // Act
-        //    var owner = context.GetOwner();
-
-        //    // Assert
-        //    Assert.That(owner, Is.EqualTo("username"));
-        //}
-
-        //[Test]
-        //public void Ctor_WithOrganization()
-        //{
-        //    // Arrange
-        //    var gitApi = Substitute.For<IGitApi>();
-        //    gitApi.GetUsername().Returns("username");
-        //    gitApi.GetOrganization().Returns("organization"); 
-
-        //    var context = new GitContext(gitApi);
-
-        //    // Act
-        //    var owner = context.GetOwner();
-
-        //    // Assert
-        //    Assert.That(owner, Is.EqualTo("organization"));
-        //}
-
         [Test]
-        public void GetRepositories()
+        public void GetRepositories_ReturnsCorrectRepositores()
         {
             // Arrange
             var directory = new DirectoryInfo("path");
@@ -66,6 +29,35 @@ namespace PPA.GitBack.Tests
 
             // Assert
             Assert.That(repositories, Is.EquivalentTo(allRepositories));
+        }
+
+        [Test]
+        public void BackupAllRepos_AllReposCallBackup()
+        {
+            // Arrange
+            var api = Substitute.For<IGitApi>();
+            var context = new GitContext(api);
+            var backupLocation = new DirectoryInfo("backup");
+
+            var allRepositories = new List<IGitRepository>
+            {
+                Substitute.For<IGitRepository>(),
+                Substitute.For<IGitRepository>(),
+                Substitute.For<IGitRepository>()
+            };
+
+            api.GetRepositories().Returns(allRepositories);
+            api.GetBackupLocation().Returns(backupLocation);
+
+
+            // Act
+            context.BackupAllRepos();
+
+            // Arrange
+            foreach (var gitRepository in allRepositories)
+            {
+               gitRepository.Received().Backup(backupLocation);
+            }
         }
     }
 }
