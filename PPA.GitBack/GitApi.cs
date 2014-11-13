@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace PPA.GitBack
 {
     public class GitApi : IGitApi
     {
         private readonly ProgramOptions _programOptions;
-        private readonly IGitClientInitializer _clientInitializer;
+        private readonly IGitClientFactory _clientFactory;
+        private readonly IProcessRunner _processRunner;
 
-        public GitApi(ProgramOptions programOptions, IGitClientInitializer clientInitializer)
+        public GitApi(ProgramOptions programOptions, IGitClientFactory clientFactory, IProcessRunner processRunner)
         {
-            _clientInitializer = clientInitializer;
+            _clientFactory = clientFactory;
+            _processRunner = processRunner;
             _programOptions = programOptions;
             UserName = programOptions.Username;
             Organization = programOptions.Organization;
@@ -28,7 +31,7 @@ namespace PPA.GitBack
 
         public IEnumerable<GitRepository> GetRepositories()
         {
-            var repoClient = _clientInitializer.CreateGitClient(UserName, Password); 
+            var repoClient = _clientFactory.CreateGitClient(UserName, Password); 
 
             var repositories = String.IsNullOrWhiteSpace(Organization) 
                 ? repoClient.GetAllForUser(UserName).Result 
@@ -66,7 +69,6 @@ namespace PPA.GitBack
         {
             var outputDirectory = Path.Combine(directory.FullName, repositoryName);
 
-            var cmdprocess = new Process();
             var startinfo = new ProcessStartInfo
             {
                 FileName = _programOptions.PathToGit,
@@ -78,8 +80,7 @@ namespace PPA.GitBack
                 UseShellExecute = false
             };
 
-            cmdprocess.StartInfo = startinfo;
-            cmdprocess.Start();
+            _processRunner.Run(startinfo);
         }
     }
 }

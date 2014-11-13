@@ -3,9 +3,9 @@ using Octokit.Internal;
 
 namespace PPA.GitBack
 {
-    public class GitClientInitializer : IGitClientInitializer
+    public class GitClientFactory : IGitClientFactory
     {
-        public RepositoriesClient CreateGitClient(string username, string password)
+        public IRepositoriesClient CreateGitClient(string username, string password)
         {
             var connection = new Connection(new ProductHeaderValue("GitBack"),
                 new InMemoryCredentialStore(new Credentials(username, password)));
