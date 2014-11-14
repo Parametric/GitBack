@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPA.GitBack", "PPA.GitBack\PPA.GitBack.csproj", "{3E93B276-B1C2-436D-BE61-9EAB0A5ED32D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPA.GitBack.Tests", "PPA.GitBack.Tests\PPA.GitBack.Tests.csproj", "{BE3AF14E-2DE7-494D-8FDF-664DECFC4C0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPA.GitBackCommand", "PPA.GitBackCommand\PPA.GitBackCommand.csproj", "{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PPA.GitBack.Console", "PPA.GitBack.Console\PPA.GitBack.Console.csproj", "{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

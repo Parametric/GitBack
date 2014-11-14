@@ -25,9 +25,7 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var clientInitializer = Substitute.For<GitClientFactory>();
-
-            var gitApi = new GitApi(programOptions, clientInitializer, null); 
+            var gitApi = new GitApi(programOptions, null, null); 
 
             // Act
             var username = gitApi.GetUsername();
@@ -48,9 +46,8 @@ namespace PPA.GitBack.Tests
                 BackupLocation = new DirectoryInfo("backup"),
                 Password = "password"
             };
-            var clientInitializer = Substitute.For<GitClientFactory>();
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null);
+            var gitApi = new GitApi(programOptions, null, null);
 
             // Act
             var organization = gitApi.GetOrganization();
@@ -74,9 +71,8 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var clientInitializer = Substitute.For<GitClientFactory>();
-
-            var gitApi = new GitApi(programOptions, clientInitializer, null);
+           
+            var gitApi = new GitApi(programOptions, null, null);
 
             // Act
             var backup = gitApi.GetBackupLocation();
@@ -93,20 +89,21 @@ namespace PPA.GitBack.Tests
         public void GetRepositories_FromUserAccount_WhenOrganizationIsNotSpecified(string organization)
         {
             // Arrange
-            var clientInitializer = Substitute.For<GitClientFactory>();
-            const string username = "username";
-            const string password = "password";
-            var repoClient = Substitute.For<IRepositoriesClient>();
-            clientInitializer.CreateGitClient(username, password).Returns(repoClient);
-
-            var backupLocation = new DirectoryInfo("backup"); 
+            var backupLocation = new DirectoryInfo("backup");
             var programOptions = new ProgramOptions()
             {
-                Username = username,
-                Password = password,
+                Username = "username",
+                Password = "password",
                 Organization = organization,
                 BackupLocation = backupLocation,
             };
+
+            var repoClient = Substitute.For<IRepositoriesClient>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            clientInitializer
+                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .Returns(repoClient)
+                ;
 
             var gitApi = new GitApi(programOptions, clientInitializer, null);
 
@@ -114,27 +111,29 @@ namespace PPA.GitBack.Tests
             gitApi.GetRepositories();
 
             // Assert
-            repoClient.Received().GetAllForUser(username);
+            repoClient.Received().GetAllForUser(programOptions.Username);
         }
 
         [Test]
         public void GetRepositories_FromOrganization_WhenOrganizationIsSpecified()
         {
             // Arrange
-            var clientInitializer = Substitute.For<GitClientFactory>();
-            const string username = "username";
-            const string password = "password";
-            var repoClient = Substitute.For<IRepositoriesClient>();
-            clientInitializer.CreateGitClient(username, password).Returns(repoClient);
-
             var backupLocation = new DirectoryInfo("backup");
             var programOptions = new ProgramOptions()
             {
-                Username = username,
-                Password = password,
+                Username = "username",
+                Password = "password",
                 Organization = "organization",
                 BackupLocation = backupLocation,
             };
+
+
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var repoClient = Substitute.For<IRepositoriesClient>();
+            clientInitializer
+                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .Returns(repoClient)
+                ;
 
             var gitApi = new GitApi(programOptions, clientInitializer, null);
 
@@ -149,26 +148,27 @@ namespace PPA.GitBack.Tests
         public void GetRepositories_MapsResultsToGitRepositoryObjects()
         {
             // Arrange
-            var clientInitializer = Substitute.For<GitClientFactory>();
-            const string username = "username";
-            const string password = "password";
-            var repoClient = Substitute.For<IRepositoriesClient>();
-            clientInitializer.CreateGitClient(username, password).Returns(repoClient);
-
             var backupLocation = new DirectoryInfo("backup");
             var programOptions = new ProgramOptions()
             {
-                Username = username,
-                Password = password,
+                Username = "username",
+                Password = "password",
                 Organization = null,
                 BackupLocation = backupLocation,
-            };
+            }; 
+            
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var repoClient = Substitute.For<IRepositoriesClient>();
+            clientInitializer
+                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .Returns(repoClient)
+                ;
 
             var allRepositories = Builder<Repository>.CreateListOfSize(2).Build().ToList();
             var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
             task.RunSynchronously();
 
-            repoClient.GetAllForUser(username).Returns(task);
+            repoClient.GetAllForUser(programOptions.Username).Returns(task);
 
             var gitApi = new GitApi(programOptions, clientInitializer, null);
 

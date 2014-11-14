@@ -7,8 +7,8 @@
     <ProjectGuid>{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PPA.GitBackCommand</RootNamespace>
-    <AssemblyName>PPA.GitBackCommand</AssemblyName>
+    <RootNamespace>PPA.GitBack.Console</RootNamespace>
+    <AssemblyName>PPA.GitBack.Console</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="CommandLineOptions.cs" />
     <Compile Include="Start.cs" />
   </ItemGroup>
   <ItemGroup>

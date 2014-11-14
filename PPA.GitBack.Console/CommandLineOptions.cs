@@ -1,7 +1,7 @@
 ﻿using CommandLine;
 using CommandLine.Text;
 
-namespace PPA.GitBackCommand
+namespace PPA.GitBack.Console
 {
     public class CommandLineOptions
     {
@@ -20,6 +20,9 @@ namespace PPA.GitBackCommand
         [Option('b', "backup location", Required = true,
             HelpText = "Input backup location path")]
         public string BackupLocation { get; set; }
+
+        [Option('g', "path to git.exe", Required=true, HelpText = "The full path to the git executable.")]
+        public string PathToGit { get; set; }
 
         [HelpOption]
         public string GetUsage()

@@ -1,7 +1,6 @@
 ﻿using Ninject;
-using PPA.GitBack;
 
-namespace PPA.GitBackCommand
+namespace PPA.GitBack.Console
 {
     class Bootstrapper
     {
