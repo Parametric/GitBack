@@ -85,6 +85,31 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
+        public void GetPassword_ReturnsCorrectPassword()
+        {
+            // Arrange
+            const string password = "password";
+
+            var programOptions = new ProgramOptions()
+            {
+                Username = "username",
+                Organization = "organization",
+                BackupLocation = new DirectoryInfo("backup"),
+                Password = password
+            };
+
+
+            var gitApi = new GitApi(programOptions, null, null);
+
+            // Act
+            var backup = gitApi.GetPassword();
+            var result = backup.Equals(password);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
         [TestCase(null)]
         [TestCase("")]
         [TestCase("        ")]
