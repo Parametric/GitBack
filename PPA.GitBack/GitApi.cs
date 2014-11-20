@@ -43,35 +43,43 @@ namespace PPA.GitBack
             return BackupLocation;
         }
 
+        public string GetPassword()
+        {
+            return Password; 
+        }
+
+        // currently unable to collect private repositories if accessing through a username and not organization
         public IEnumerable<GitRepository> GetRepositories()
         {
-            var repoClient = _clientFactory.CreateGitClient(Username, Password); 
+             var repoClient = _clientFactory.CreateGitClient(Username, Password); 
 
             var repositories = String.IsNullOrWhiteSpace(Organization) 
                 ? repoClient.GetAllForUser(Username).Result 
                 : repoClient.GetAllForOrg(Organization).Result;
 
-            return repositories.Select(repository => new GitRepository(this, repository.CloneUrl, repository.Name));
+            return repositories.Select(repository => new GitRepository(this, repository.Name));
         }
 
-        public void Pull(string url, string name)
+        public void Pull(string repositoryName)
         {
-            WriteToCmd(url, BackupLocation, name, "pull");
+            WriteToCmd(repositoryName, "pull");
         }
 
-        public void Clone(string url, string name)
+        public void Clone(string repositoryName)
         {
-            WriteToCmd(url, BackupLocation, name, "clone");
+            WriteToCmd(repositoryName, "clone");
         }
 
-        private void WriteToCmd(string url, DirectoryInfo directory, string repositoryName, string gitCommand)
+        private void WriteToCmd(string repositoryName, string gitCommand)
         {
-            var outputDirectory = Path.Combine(directory.FullName, repositoryName);
+            var outputDirectory = Path.Combine(BackupLocation.FullName, repositoryName);
+
+            var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization; 
 
             var startinfo = new ProcessStartInfo
             {
                 FileName = _programOptions.PathToGit,
-                Arguments = string.Format("{0} {1} {2}", gitCommand, url, outputDirectory),
+                Arguments = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, Password, owner, repositoryName, outputDirectory),
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 RedirectStandardInput = true,

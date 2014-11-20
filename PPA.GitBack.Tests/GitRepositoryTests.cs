@@ -12,7 +12,7 @@ namespace PPA.GitBack.Tests
             // Arrange
             var api = Substitute.For<IGitApi>();
             const string name = "name";
-            var gitRepository = new GitRepository(api, "url", name);
+            var gitRepository = new GitRepository(api, name);
 
             // Act
             var result = gitRepository.GetName();
@@ -22,35 +22,19 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GetUrl_ReturnsCorrectUrl()
-        {
-            // Arrange
-            var api = Substitute.For<IGitApi>();
-            const string url = "url";
-            var gitRepository = new GitRepository(api, url, "name");
-
-            // Act
-            var result = gitRepository.GetUrl();
-
-            // Assert
-            Assert.That(result, Is.EqualTo(url));
-        }
-
-        [Test]
         public void Pull_ApiReceivesPullRequest()
         {
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
             const string name = "repository name";
-            const string url = "url";
 
-            var repository = new GitRepository(gitApi, url, name); 
+            var repository = new GitRepository(gitApi, name); 
 
             // Act
             repository.Pull();
 
             // Assert
-            gitApi.Received().Pull(url, name);
+            gitApi.Received().Pull(name);
         }
 
         [Test]
@@ -59,15 +43,14 @@ namespace PPA.GitBack.Tests
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
             const string name = "repository name";
-            const string url = "url";
 
-            var repository = new GitRepository(gitApi, url, name);
+            var repository = new GitRepository(gitApi, name);
 
             // Act
             repository.Clone();
 
             // Assert
-            gitApi.Received().Clone(url, name);
+            gitApi.Received().Clone(name);
         }
     }
 }

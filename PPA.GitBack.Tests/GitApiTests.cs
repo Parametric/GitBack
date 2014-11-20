@@ -182,7 +182,6 @@ namespace PPA.GitBack.Tests
                 var expected = allRepositories[i];
                 var actual = results[i];
                 Assert.That(actual.GetName(), Is.EqualTo(expected.Name));
-                Assert.That(actual.GetUrl(), Is.EqualTo(expected.CloneUrl));
             }
         }
 
@@ -197,7 +196,7 @@ namespace PPA.GitBack.Tests
             {
                 Username = "username",
                 Password = "password",
-                Organization = null,
+                Organization = "organization",
                 BackupLocation = new DirectoryInfo("backup"),
                 PathToGit = "//some/path/to/git.exe"
             };
@@ -205,7 +204,7 @@ namespace PPA.GitBack.Tests
             var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
 
             // Act
-            gitApi.Pull("http://some.url.com", "SomeRepo");
+            gitApi.Pull("SomeRepo");
 
             // Assert
             processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "pull")));
@@ -222,7 +221,7 @@ namespace PPA.GitBack.Tests
             {
                 Username = "username",
                 Password = "password",
-                Organization = null,
+                Organization = "organization",
                 BackupLocation = new DirectoryInfo("backup"),
                 PathToGit = "//some/path/to/git.exe"
             };
@@ -230,7 +229,7 @@ namespace PPA.GitBack.Tests
             var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
 
             // Act
-            gitApi.Clone("http://some.url.com", "SomeRepo");
+            gitApi.Clone("SomeRepo");
 
             // Assert
             processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "clone")));
@@ -238,7 +237,9 @@ namespace PPA.GitBack.Tests
 
         private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions, string gitCommand)
         {
-            var expectedArguments = gitCommand + @" http://some.url.com C:\git\GitBack\PPA.GitBack.Tests\bin\Debug\backup\SomeRepo";
+            var expectedArguments = gitCommand +
+                                    @" https://username:password@github.com/organization/SomeRepo.git C:\git\GitBack\PPA.GitBack.Tests\bin\Debug\backup\SomeRepo";
+
             Assert.That(arg.Arguments, Is.EqualTo(expectedArguments), "Arguments");
             Assert.That(arg.WindowStyle, Is.EqualTo(ProcessWindowStyle.Hidden));
             Assert.That(arg.CreateNoWindow, Is.True);

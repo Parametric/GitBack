@@ -16,7 +16,7 @@ namespace PPA.GitBack.Tests
             var gitApi = Substitute.For<IGitApi>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
-                .All().WithConstructor(() => new GitRepository(gitApi, "url", "name"))
+                .All().WithConstructor(() => new GitRepository(gitApi, "name"))
                 .Build()
                 ;
             var context = new GitContext(gitApi);
@@ -35,16 +35,15 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var api = Substitute.For<IGitApi>();
-            const string url = "url";
             const string name = "name";
             var context = new GitContext(api);
             var backupLocation = new DirectoryInfo("backup");
 
             var allRepositories = new List<GitRepository>
             {
-                Substitute.For<GitRepository>(api, url, name),
-                Substitute.For<GitRepository>(api, url, name),
-                Substitute.For<GitRepository>(api, url, name)
+                Substitute.For<GitRepository>(api, name),
+                Substitute.For<GitRepository>(api, name),
+                Substitute.For<GitRepository>(api, name)
             };
 
             api.GetRepositories().Returns(allRepositories);
