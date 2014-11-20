@@ -111,7 +111,7 @@ namespace PPA.GitBack.Tests
             gitApi.GetRepositories();
 
             // Assert
-            repoClient.Received().GetAllForUser(programOptions.Username);
+            repoClient.Received().GetAllForCurrent();
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace PPA.GitBack.Tests
             var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
             task.RunSynchronously();
 
-            repoClient.GetAllForUser(programOptions.Username).Returns(task);
+            repoClient.GetAllForCurrent().Returns(task);
 
             var gitApi = new GitApi(programOptions, clientInitializer, null);
 

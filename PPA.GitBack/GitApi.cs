@@ -48,13 +48,12 @@ namespace PPA.GitBack
             return Password; 
         }
 
-        // currently unable to collect private repositories if accessing through a username and not organization
         public IEnumerable<GitRepository> GetRepositories()
         {
              var repoClient = _clientFactory.CreateGitClient(Username, Password); 
 
-            var repositories = String.IsNullOrWhiteSpace(Organization) 
-                ? repoClient.GetAllForUser(Username).Result 
+            var repositories = String.IsNullOrWhiteSpace(Organization)
+                ? repoClient.GetAllForCurrent().Result 
                 : repoClient.GetAllForOrg(Organization).Result;
 
             return repositories.Select(repository => new GitRepository(this, repository.Name));
