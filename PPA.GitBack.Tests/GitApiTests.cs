@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -240,6 +241,8 @@ namespace PPA.GitBack.Tests
             var expectedArguments = gitCommand +
                                     @" https://username:password@github.com/organization/SomeRepo.git C:\git\GitBack\PPA.GitBack.Tests\bin\Debug\backup\SomeRepo";
 
+            Debug.WriteLine("About to assert program options:");
+
             Assert.That(arg.Arguments, Is.EqualTo(expectedArguments), "Arguments");
             Assert.That(arg.WindowStyle, Is.EqualTo(ProcessWindowStyle.Hidden));
             Assert.That(arg.CreateNoWindow, Is.True);
@@ -247,6 +250,7 @@ namespace PPA.GitBack.Tests
             Assert.That(arg.RedirectStandardOutput, Is.True);
             Assert.That(arg.UseShellExecute, Is.False);
 
+            Debug.WriteLine("Result being calculated");
 
             var result = arg.FileName == programOptions.PathToGit
                                               && arg.Arguments == expectedArguments
@@ -255,7 +259,12 @@ namespace PPA.GitBack.Tests
                                               && arg.RedirectStandardInput == true
                                               && arg.RedirectStandardOutput == true
                                               && arg.UseShellExecute == false;
+
+
+            Debug.WriteLine("result: " + result);
+
             return result;
+
         }
     }
 }
