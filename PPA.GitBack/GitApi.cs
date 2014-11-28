@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using PPA.Logging.Contract;
 
 namespace PPA.GitBack
 {
@@ -11,16 +12,18 @@ namespace PPA.GitBack
         private readonly ProgramOptions _programOptions;
         private readonly GitClientFactory _clientFactory;
         private readonly ProcessRunner _processRunner;
+        private readonly ILogger _logger;
 
         public DirectoryInfo BackupLocation { get; private set; }
         public string Username { get; private set; }
         public string Organization { get; private set; }
         public string Password { get; private set; }
 
-        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner)
+        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner, ILogger logger)
         {
             _clientFactory = clientFactory;
             _processRunner = processRunner;
+            _logger = logger;
             _programOptions = programOptions;
             Username = programOptions.Username;
             Organization = programOptions.Organization;
@@ -73,12 +76,14 @@ namespace PPA.GitBack
         {
             var outputDirectory = Path.Combine(BackupLocation.Name, repositoryName);
 
-            var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization; 
+            var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization;
 
+            var args = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, Password, owner, repositoryName, outputDirectory);
+            _logger.DebugFormat("{0} {1}", _programOptions.PathToGit, args);
             var startinfo = new ProcessStartInfo
             {
                 FileName = _programOptions.PathToGit,
-                Arguments = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, Password, owner, repositoryName, outputDirectory),
+                Arguments = args,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 RedirectStandardInput = true,

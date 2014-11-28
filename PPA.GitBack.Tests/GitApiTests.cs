@@ -9,6 +9,7 @@ using FizzWare.NBuilder;
 using NSubstitute;
 using NUnit.Framework;
 using Octokit;
+using PPA.Logging.Contract;
 
 namespace PPA.GitBack.Tests
 {
@@ -27,7 +28,7 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var gitApi = new GitApi(programOptions, null, null); 
+            var gitApi = new GitApi(programOptions, null, null, null); 
 
             // Act
             var username = gitApi.GetUsername();
@@ -49,7 +50,7 @@ namespace PPA.GitBack.Tests
                 Password = "password"
             };
 
-            var gitApi = new GitApi(programOptions, null, null);
+            var gitApi = new GitApi(programOptions, null, null, null);
 
             // Act
             var organization = gitApi.GetOrganization();
@@ -74,7 +75,7 @@ namespace PPA.GitBack.Tests
             };
 
            
-            var gitApi = new GitApi(programOptions, null, null);
+            var gitApi = new GitApi(programOptions, null, null, null);
 
             // Act
             var backup = gitApi.GetBackupLocation();
@@ -99,7 +100,7 @@ namespace PPA.GitBack.Tests
             };
 
 
-            var gitApi = new GitApi(programOptions, null, null);
+            var gitApi = new GitApi(programOptions, null, null, null);
 
             // Act
             var backup = gitApi.GetPassword();
@@ -132,7 +133,7 @@ namespace PPA.GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
 
             // Act
             gitApi.GetRepositories();
@@ -162,7 +163,7 @@ namespace PPA.GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
 
             // Act
             gitApi.GetRepositories();
@@ -197,7 +198,7 @@ namespace PPA.GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
 
             // Act
             var results = gitApi.GetRepositories().ToList();
@@ -218,6 +219,7 @@ namespace PPA.GitBack.Tests
             // Arrange
             var clientInitializer = Substitute.For<GitClientFactory>();
             var processRunner = Substitute.For<ProcessRunner>();
+            var logger = Substitute.For<ILogger>();
 
             var programOptions = new ProgramOptions()
             {
@@ -228,7 +230,7 @@ namespace PPA.GitBack.Tests
                 PathToGit = "//some/path/to/git.exe"
             };
 
-            var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
+            var gitApi = new GitApi(programOptions, clientInitializer, processRunner, logger);
 
             // Act
             gitApi.Pull("SomeRepo");
@@ -243,7 +245,7 @@ namespace PPA.GitBack.Tests
             // Arrange
             var clientInitializer = Substitute.For<GitClientFactory>();
             var processRunner = Substitute.For<ProcessRunner>();
-
+            var logger = Substitute.For<ILogger>();
 
             var programOptions = new ProgramOptions()
             {
@@ -254,7 +256,7 @@ namespace PPA.GitBack.Tests
                 PathToGit = "//some/path/to/git.exe"
             };
 
-            var gitApi = new GitApi(programOptions, clientInitializer, processRunner);
+            var gitApi = new GitApi(programOptions, clientInitializer, processRunner, logger);
 
             // Act
             gitApi.Clone("SomeRepo");

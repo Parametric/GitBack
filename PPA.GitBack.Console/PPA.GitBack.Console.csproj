@@ -45,8 +45,18 @@
     <Reference Include="CommandLine">
       <HintPath>..\packages\CommandLineParser.1.9.71\lib\net45\CommandLine.dll</HintPath>
     </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="Ninject">
       <HintPath>..\packages\Ninject.3.2.2.0\lib\net45-full\Ninject.dll</HintPath>
+    </Reference>
+    <Reference Include="PPA.Logging.Contract">
+      <HintPath>..\packages\PPA.Logging.Contract.1.2.11\lib\net40\PPA.Logging.Contract.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PPA.Logging.Log4Net">
+      <HintPath>..\packages\PPA.Logging.Log4Net.3.0.3\lib\net40\PPA.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>

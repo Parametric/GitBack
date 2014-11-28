@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using CommandLine;
+using log4net.Config;
 using Ninject;
 
 namespace PPA.GitBack.Console
@@ -8,6 +9,8 @@ namespace PPA.GitBack.Console
     {
         public static void Main(string[] args)
         {
+            XmlConfigurator.Configure();
+
             var options = new CommandLineOptions();
             if (Parser.Default.ParseArguments(args, options))
             {

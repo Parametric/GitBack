@@ -33,6 +33,9 @@
     <Reference Include="Octokit">
       <HintPath>..\packages\Octokit.0.5.2\lib\net45\Octokit.dll</HintPath>
     </Reference>
+    <Reference Include="PPA.Logging.Contract">
+      <HintPath>..\packages\PPA.Logging.Contract.3.0.3\lib\net40\PPA.Logging.Contract.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
