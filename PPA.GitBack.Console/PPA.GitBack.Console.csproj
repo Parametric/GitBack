@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="PPA.GitBack.Console.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
