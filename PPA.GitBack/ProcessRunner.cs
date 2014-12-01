@@ -8,6 +8,7 @@ namespace PPA.GitBack
         {
             var cmdprocess = new Process {StartInfo = startInfo};
             cmdprocess.Start();
+            cmdprocess.WaitForExit();
         }
     }
 }

@@ -74,7 +74,7 @@ namespace PPA.GitBack
 
         private void WriteToCmd(string repositoryName, string gitCommand)
         {
-            var outputDirectory = Path.Combine(BackupLocation.Name, repositoryName);
+            var outputDirectory = Path.Combine(BackupLocation.FullName, repositoryName);
 
             var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization;
 
@@ -88,7 +88,7 @@ namespace PPA.GitBack
                 CreateNoWindow = true,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
-                UseShellExecute = false
+                UseShellExecute = false,
             };
 
             _processRunner.Run(startinfo);
