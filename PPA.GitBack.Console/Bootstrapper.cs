@@ -27,7 +27,7 @@ namespace PPA.GitBack.Console
             kernel.Bind<IGitApi>().To<GitApi>();
             kernel.Bind<IGitContext>().To<GitContext>();
 
-            //XmlConfigurator.Configure();
+            XmlConfigurator.Configure();
         }
     }
 }
