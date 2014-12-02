@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FizzWare.NBuilder;
 using NSubstitute;
@@ -171,7 +172,7 @@ namespace PPA.GitBack.Tests
         }
 
         [Test]
-        public void GetRepositories_MapsResultsToGitRepositoryObjects()
+        public void GetRepositories_MapsResultsToGitRepositoryObjects_WithoutFilter()
         {
             // Arrange
             var backupLocation = new DirectoryInfo("backup");
@@ -209,6 +210,44 @@ namespace PPA.GitBack.Tests
                 var actual = results[i];
                 Assert.That(actual.GetName(), Is.EqualTo(expected.Name));
             }
+        }
+
+        [Test]
+        public void GetRepositories_MapsResultsToGitRepositoryObjects_WithFilter()
+        {
+            // Arrange
+            var backupLocation = new DirectoryInfo("backup");
+            var programOptions = new ProgramOptions()
+            {
+                Username = "username",
+                Password = "password",
+                Organization = null,
+                BackupLocation = backupLocation,
+                ProjectFilter = new Regex("/*1")
+
+            };
+
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var repoClient = Substitute.For<IRepositoriesClient>();
+            clientInitializer
+                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .Returns(repoClient)
+                ;
+
+            var allRepositories = Builder<Repository>.CreateListOfSize(2).Build().ToList();
+            var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
+            task.RunSynchronously();
+
+            repoClient.GetAllForCurrent().Returns(task);
+
+            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
+
+            // Act
+            var results = gitApi.GetRepositories().ToList();
+
+            // Assert
+            Assert.That(results, Has.Count.EqualTo(1));
+            Assert.That(results[0].GetName(), Is.EqualTo(allRepositories[0].Name));
         }
 
         [Test]

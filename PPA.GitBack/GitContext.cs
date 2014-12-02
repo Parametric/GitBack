@@ -18,13 +18,14 @@ namespace PPA.GitBack
         }
 
         public void BackupAllRepos()
-        {
+        {            
             var gitRepositories = GetRepositories();
             foreach (var gitRepository in gitRepositories)
             {
-                var backupDirectory = _gitApi.GetBackupLocation(); 
+                var backupDirectory = _gitApi.GetBackupLocation();
                 gitRepository.Backup(backupDirectory);
-            }
+            }                
+            
         }
     }
 }

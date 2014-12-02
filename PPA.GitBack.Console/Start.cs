@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
 using CommandLine;
 using log4net.Config;
 using Ninject;
@@ -32,7 +33,8 @@ namespace PPA.GitBack.Console
                 Password = commandLineOptions.Password,
                 Organization = commandLineOptions.Organization,
                 BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
-                PathToGit = commandLineOptions.PathToGit
+                PathToGit = commandLineOptions.PathToGit,
+                ProjectFilter = new Regex(commandLineOptions.ProjectFilter)
             };
         }
     }
