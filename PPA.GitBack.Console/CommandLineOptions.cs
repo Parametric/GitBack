@@ -24,7 +24,7 @@ namespace PPA.GitBack.Console
         [Option('g', "path to git.exe", Required=true, HelpText = "The full path to the git executable.")]
         public string PathToGit { get; set; }
 
-        [Option('f', "filter projects backed up", Required = false, HelpText = "Optional: Filter projects by name.")]
+        [Option('f', "filter projects regex", Required = false, HelpText = "Optional: Filter projects by name with a regular expression pattern")]
         public string ProjectFilter { get; set; }
 
         [HelpOption]

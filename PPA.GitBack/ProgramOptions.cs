@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Text.RegularExpressions;
 
 namespace PPA.GitBack
 {
@@ -10,6 +9,6 @@ namespace PPA.GitBack
         public string Organization { get; set; }
         public DirectoryInfo BackupLocation { get; set; }
         public string PathToGit { get; set; }
-        public Regex ProjectFilter { get; set; }
+        public string ProjectFilter { get; set; }
     }
 }

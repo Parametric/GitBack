@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text.RegularExpressions;
 using CommandLine;
 using log4net.Config;
@@ -25,7 +26,7 @@ namespace PPA.GitBack.Console
             }
         }
 
-        static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
+        private static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
         {
             return new ProgramOptions
             {
@@ -34,7 +35,7 @@ namespace PPA.GitBack.Console
                 Organization = commandLineOptions.Organization,
                 BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
                 PathToGit = commandLineOptions.PathToGit,
-                ProjectFilter = new Regex(commandLineOptions.ProjectFilter)
+                ProjectFilter = commandLineOptions.ProjectFilter
             };
         }
     }

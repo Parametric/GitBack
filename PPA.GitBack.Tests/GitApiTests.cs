@@ -2,9 +2,11 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FizzWare.NBuilder;
+using Microsoft.Win32;
 using NSubstitute;
 using NUnit.Framework;
 using Octokit;
@@ -223,8 +225,7 @@ namespace PPA.GitBack.Tests
                 Password = "password",
                 Organization = null,
                 BackupLocation = backupLocation,
-                ProjectFilter = new Regex("/*1")
-
+                ProjectFilter = "1",
             };
 
             var clientInitializer = Substitute.For<GitClientFactory>();

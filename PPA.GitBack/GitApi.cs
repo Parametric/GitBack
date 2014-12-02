@@ -19,7 +19,7 @@ namespace PPA.GitBack
         public string Username { get; private set; }
         public string Organization { get; private set; }
         public string Password { get; private set; }
-        public Regex ProjectFilter { get; private set; }
+        public string ProjectFilter { get; private set; }
 
         public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner, ILogger logger)
         {
@@ -63,7 +63,10 @@ namespace PPA.GitBack
                 : repoClient.GetAllForOrg(Organization).Result;
 
             if (ProjectFilter != null)
-                repositories = repositories.Where(x => ProjectFilter.IsMatch(x.Name)).ToList();
+            {
+                var regex = new Regex(ProjectFilter);
+                repositories = repositories.Where(x => regex.IsMatch(x.Name)).ToList();                
+            }
 
             return repositories.Select(repository => new GitRepository(this, repository.Name));
         }
@@ -85,9 +88,12 @@ namespace PPA.GitBack
             var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization;
 
             var args = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, Password, owner, repositoryName, outputDirectory);
+
             var argsWithPasswordHidden = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, "************", owner, repositoryName, outputDirectory);
 
             _logger.DebugFormat("{0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
+
+            Console.WriteLine(argsWithPasswordHidden);
 
             var startinfo = new ProcessStartInfo
             {
