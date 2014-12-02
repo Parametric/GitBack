@@ -252,7 +252,7 @@ namespace PPA.GitBack.Tests
                 Username = "username",
                 Password = "password",
                 Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
+                BackupLocation = new DirectoryInfo(Directory.GetCurrentDirectory() + "\\backup"), 
                 PathToGit = "//some/path/to/git.exe"
             };
 
@@ -268,7 +268,7 @@ namespace PPA.GitBack.Tests
         private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions, string gitCommand)
         {
             var expectedArguments = gitCommand +
-                                    @" https://username:password@github.com/organization/SomeRepo.git backup\SomeRepo";
+                                    @" https://username:password@github.com/organization/SomeRepo.git " + Directory.GetCurrentDirectory() + "\\backup\\SomeRepo";
 
             Assert.That(arg.Arguments, Is.EqualTo(expectedArguments), "Arguments");
             Assert.That(arg.WindowStyle, Is.EqualTo(ProcessWindowStyle.Hidden));
