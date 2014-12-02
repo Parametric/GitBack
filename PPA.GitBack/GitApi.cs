@@ -64,8 +64,7 @@ namespace PPA.GitBack
 
             if (ProjectFilter != null)
             {
-                var regex = new Regex(ProjectFilter);
-                repositories = repositories.Where(x => regex.IsMatch(x.Name)).ToList();                
+                repositories = repositories.Where(x => Regex.IsMatch(x.Name, ProjectFilter, RegexOptions.IgnoreCase)).ToList();                
             }
 
             return repositories.Select(repository => new GitRepository(this, repository.Name));
