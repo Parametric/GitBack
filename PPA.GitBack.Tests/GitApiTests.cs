@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.AccessControl;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FizzWare.NBuilder;
-using Microsoft.Win32;
 using NSubstitute;
 using NUnit.Framework;
 using Octokit;
@@ -19,7 +17,7 @@ namespace PPA.GitBack.Tests
     {
         [Test]
         public void GetUsername_ReturnsCorrectUsername()
-        {
+        { 
             // Arrange
             var programOptions = new ProgramOptions()
             {
@@ -249,6 +247,30 @@ namespace PPA.GitBack.Tests
             // Assert
             Assert.That(results, Has.Count.EqualTo(1));
             Assert.That(results[0].GetName(), Is.EqualTo(allRepositories[0].Name));
+        }
+
+        [Test]
+        public void GetRepositories_ThrowsException()
+        {
+            // Arrange
+            var programOptions = new ProgramOptions()
+            {
+                Username = "username",
+                Password = "password"
+            };
+
+            var logger = Substitute.For<ILogger>();
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var repoClient = Substitute.For<IRepositoriesClient>();
+            repoClient.GetAllForCurrent().Returns(x => { throw new AggregateException(); });
+
+            clientInitializer.CreateGitClient(programOptions.Username, programOptions.Password).Returns(repoClient);
+
+            var gitApi = new GitApi(programOptions, clientInitializer, null, logger);
+
+            // Act && Assert 
+            Assert.Throws<AggregateException>(() => gitApi.GetRepositories());
+
         }
 
         [Test]

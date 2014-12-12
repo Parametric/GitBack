@@ -19,7 +19,6 @@ namespace PPA.GitBack
         public string Username { get; private set; }
         public string Organization { get; private set; }
         public string Password { get; private set; }
-        public string ProjectFilter { get; private set; }
 
         public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner, ILogger logger)
         {
@@ -31,7 +30,6 @@ namespace PPA.GitBack
             Organization = programOptions.Organization;
             BackupLocation = programOptions.BackupLocation;
             Password = programOptions.Password;
-            ProjectFilter = programOptions.ProjectFilter;
         }
 
         public string GetUsername()
@@ -56,18 +54,28 @@ namespace PPA.GitBack
 
         public IEnumerable<GitRepository> GetRepositories()
         {
-             var repoClient = _clientFactory.CreateGitClient(Username, Password); 
-
-            var repositories = String.IsNullOrWhiteSpace(Organization)
-                ? repoClient.GetAllForCurrent().Result 
-                : repoClient.GetAllForOrg(Organization).Result;
-
-            if (ProjectFilter != null)
+            try
             {
-                repositories = repositories.Where(x => Regex.IsMatch(x.Name, ProjectFilter, RegexOptions.IgnoreCase)).ToList();                
-            }
+                var repoClient = _clientFactory.CreateGitClient(Username, Password);
 
-            return repositories.Select(repository => new GitRepository(this, repository.Name));
+                var repositories = String.IsNullOrWhiteSpace(Organization)
+                    ? repoClient.GetAllForCurrent().Result
+                    : repoClient.GetAllForOrg(Organization).Result;
+
+                var filter = _programOptions.ProjectFilter;
+
+                if (!String.IsNullOrEmpty(filter))
+                {
+                    repositories = repositories.Where(x => Regex.IsMatch(x.Name, filter, RegexOptions.IgnoreCase)).ToList();
+                }
+
+                return repositories.Select(repository => new GitRepository(this, repository.Name));
+            }
+            catch (System.AggregateException e)
+            {
+                _logger.Error(e.Message, e);
+                throw;
+            }
         }
 
         public void Pull(string repositoryName)
@@ -89,10 +97,7 @@ namespace PPA.GitBack
             var args = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, Password, owner, repositoryName, outputDirectory);
 
             var argsWithPasswordHidden = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, "************", owner, repositoryName, outputDirectory);
-
             _logger.DebugFormat("{0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
-
-            Console.WriteLine(argsWithPasswordHidden);
 
             var startinfo = new ProcessStartInfo
             {
