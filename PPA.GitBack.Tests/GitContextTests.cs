@@ -3,6 +3,7 @@ using System.IO;
 using FizzWare.NBuilder;
 using NSubstitute;
 using NUnit.Framework;
+using PPA.Logging.Contract;
 
 namespace PPA.GitBack.Tests
 {
@@ -14,12 +15,13 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
+            var logger = Substitute.For<ILogger>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
                 .All().WithConstructor(() => new GitRepository(gitApi, "name"))
                 .Build()
                 ;
-            var context = new GitContext(gitApi);
+            var context = new GitContext(gitApi, logger);
 
             gitApi.GetRepositories().Returns(allRepositories);
 
@@ -35,8 +37,9 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var api = Substitute.For<IGitApi>();
+            var logger = Substitute.For<ILogger>();
             const string name = "name";
-            var context = new GitContext(api);
+            var context = new GitContext(api, logger);
             var backupLocation = new DirectoryInfo("backup");
 
             var allRepositories = new List<GitRepository>

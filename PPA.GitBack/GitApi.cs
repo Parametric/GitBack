@@ -54,6 +54,7 @@ namespace PPA.GitBack
 
         public IEnumerable<GitRepository> GetRepositories()
         {
+            _logger.Info("Retrieving repositories from GitHub.");
             try
             {
                 var repoClient = _clientFactory.CreateGitClient(Username, Password);
@@ -68,6 +69,8 @@ namespace PPA.GitBack
                 {
                     repositories = repositories.Where(x => Regex.IsMatch(x.Name, filter, RegexOptions.IgnoreCase)).ToList();
                 }
+
+                _logger.Info("Repositories retrieved from GitHub.");
 
                 return repositories.Select(repository => new GitRepository(this, repository.Name));
             }
@@ -97,7 +100,7 @@ namespace PPA.GitBack
             var args = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, Password, owner, repositoryName, outputDirectory);
 
             var argsWithPasswordHidden = string.Format("{0} https://{1}:{2}@github.com/{3}/{4}.git {5}", gitCommand, Username, "************", owner, repositoryName, outputDirectory);
-            _logger.DebugFormat("{0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
+            _logger.InfoFormat("Executing Command: {0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
 
             var startinfo = new ProcessStartInfo
             {

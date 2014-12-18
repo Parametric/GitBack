@@ -132,7 +132,7 @@ namespace PPA.GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILogger>());
 
             // Act
             gitApi.GetRepositories();
@@ -162,7 +162,7 @@ namespace PPA.GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILogger>());
 
             // Act
             gitApi.GetRepositories();
@@ -197,7 +197,7 @@ namespace PPA.GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILogger>());
 
             // Act
             var results = gitApi.GetRepositories().ToList();
@@ -239,7 +239,7 @@ namespace PPA.GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, null);
+            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILogger>());
 
             // Act
             var results = gitApi.GetRepositories().ToList();
