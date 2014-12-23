@@ -278,8 +278,8 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var clientInitializer = Substitute.For<GitClientFactory>();
-            var processRunner = Substitute.For<ProcessRunner>();
             var logger = Substitute.For<ILogger>();
+            var processRunner = Substitute.For<ProcessRunner>(logger);
 
             var programOptions = new ProgramOptions()
             {
@@ -304,8 +304,8 @@ namespace PPA.GitBack.Tests
         {
             // Arrange
             var clientInitializer = Substitute.For<GitClientFactory>();
-            var processRunner = Substitute.For<ProcessRunner>();
             var logger = Substitute.For<ILogger>();
+            var processRunner = Substitute.For<ProcessRunner>(logger);
 
             var programOptions = new ProgramOptions()
             {
@@ -327,8 +327,20 @@ namespace PPA.GitBack.Tests
 
         private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions, string gitCommand)
         {
-            var expectedArguments = gitCommand +
-                                    @" https://username:password@github.com/organization/SomeRepo.git " + Directory.GetCurrentDirectory() + "\\backup\\SomeRepo";
+            var expectedArguments = "";
+            switch (gitCommand.ToLower())
+            {
+                case "pull":
+                    expectedArguments =@"-C " + Directory.GetCurrentDirectory() + @"\backup\SomeRepo pull https://username:password@github.com/organization/SomeRepo.git";
+
+                    break;
+
+                case "clone":
+                    expectedArguments = @"clone https://username:password@github.com/organization/SomeRepo.git " + Directory.GetCurrentDirectory() + @"\backup\SomeRepo";
+                    break;
+
+            }
+
 
             Assert.That(arg.Arguments, Is.EqualTo(expectedArguments), "Arguments");
             Assert.That(arg.WindowStyle, Is.EqualTo(ProcessWindowStyle.Hidden));
