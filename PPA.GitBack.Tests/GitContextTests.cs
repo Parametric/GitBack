@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.IO;
 using FizzWare.NBuilder;
 using NSubstitute;
 using NUnit.Framework;
+using PPA.Logging.Contract;
 
 namespace PPA.GitBack.Tests
 {
@@ -13,46 +11,19 @@ namespace PPA.GitBack.Tests
     public class GitContextTests
     {
         [Test]
-        [TestCase(null)]
-        [TestCase("")]
-        [TestCase("        ")]
-        public void Ctor_WithoutOrganization(string organization)
+        public void GetRepositories_ReturnsCorrectRepositores()
         {
             // Arrange
-            var context = new GitContext(new GitApi("username", organization));
-
-            // Act
-            var owner = context.GetOwner();
-
-            // Assert
-            Assert.That(owner, Is.EqualTo("username"));
-        }
-
-        [Test]
-        public void Ctor_WithOrganization()
-        {
-            // Arrange
-            var context = new GitContext(new GitApi("username", "organization"));
-
-            // Act
-            var owner = context.GetOwner();
-
-            // Assert
-            Assert.That(owner, Is.EqualTo("organization"));
-        }
-
-        [Test]
-        public void GetRepositories()
-        {
-            // Arrange
-            var gitApi = Substitute.For<GitApi>("username", "organization");
+            var gitApi = Substitute.For<IGitApi>();
+            var logger = Substitute.For<ILogger>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
+                .All().WithConstructor(() => new GitRepository(gitApi, "name"))
                 .Build()
                 ;
-            var context = new GitContext(gitApi);
+            var context = new GitContext(gitApi, logger);
 
-            gitApi.GetRepositories(context.GetOwner()).Returns(allRepositories);
+            gitApi.GetRepositories().Returns(allRepositories);
 
             // Act
             var repositories = context.GetRepositories();
@@ -61,5 +32,35 @@ namespace PPA.GitBack.Tests
             Assert.That(repositories, Is.EquivalentTo(allRepositories));
         }
 
+        [Test]
+        public void BackupAllRepos_AllReposCallBackup()
+        {
+            // Arrange
+            var api = Substitute.For<IGitApi>();
+            var logger = Substitute.For<ILogger>();
+            const string name = "name";
+            var context = new GitContext(api, logger);
+            var backupLocation = new DirectoryInfo("backup");
+
+            var allRepositories = new List<GitRepository>
+            {
+                Substitute.For<GitRepository>(api, name),
+                Substitute.For<GitRepository>(api, name),
+                Substitute.For<GitRepository>(api, name)
+            };
+
+            api.GetRepositories().Returns(allRepositories);
+            api.GetBackupLocation().Returns(backupLocation);
+
+
+            // Act
+            context.BackupAllRepos();
+
+            // Arrange
+            foreach (var gitRepository in allRepositories)
+            {
+               gitRepository.Received().Backup(backupLocation);
+            }
+        }
     }
 }

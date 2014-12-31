@@ -1,30 +1,35 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
+using PPA.Logging.Contract;
 
 namespace PPA.GitBack
 {
-    public class GitContext
+    public class GitContext : IGitContext
     {
-        private readonly string _username;
-        private readonly GitApi _gitApi;
-        private readonly string _organization;
+        private readonly IGitApi _gitApi;
+        private readonly ILogger _logger;
 
-        public GitContext(GitApi gitApi)
+        public GitContext(IGitApi gitApi, ILogger logger)
         {
-
             _gitApi = gitApi;
-            _username = gitApi.UserName;
-            _organization = gitApi.Organization;
-        }
-
-        public string GetOwner()
-        {
-            return string.IsNullOrWhiteSpace(_organization) ? _username : _organization;
+            _logger = logger;
         }
 
         public IEnumerable<GitRepository> GetRepositories()
         {
-            return null;
+            return _gitApi.GetRepositories();
+        }
+
+        public void BackupAllRepos()
+        {            
+            var gitRepositories = GetRepositories();
+            var backupDirectory = _gitApi.GetBackupLocation();
+            foreach (var gitRepository in gitRepositories)
+            {
+                _logger.InfoFormat("Backing up {0}.", gitRepository.Name);
+                gitRepository.Backup(backupDirectory);
+            }                
+            
         }
     }
 }
