@@ -1,7 +1,9 @@
 ﻿using System.IO;
 using CommandLine;
 using log4net.Config;
+using log4net.Repository.Hierarchy;
 using Ninject;
+using PPA.Logging.Contract;
 
 namespace PPA.GitBack.Console
 {
@@ -18,6 +20,9 @@ namespace PPA.GitBack.Console
                 var kernel = new StandardKernel();
 
                 Bootstrapper.ConfigureNinjectBindings(kernel, programOptions);
+
+                var logger = kernel.Get<ILogger>();
+                logger.InfoFormat("Gitback starting...");
 
                 var program = kernel.Get<Program>();
                 program.Execute();
