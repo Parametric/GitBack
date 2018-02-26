@@ -59,9 +59,17 @@ namespace GitBack
             {
                 var repoClient = _clientFactory.CreateGitClient(Username, Password);
 
-                var repositories = String.IsNullOrWhiteSpace(Organization)
-                    ? repoClient.GetAllForCurrent().Result
-                    : repoClient.GetAllForOrg(Organization).Result;
+                IReadOnlyList<Octokit.Repository> repositories;
+                if (String.IsNullOrWhiteSpace(Organization))
+                {
+                    _logger.Info("Retrieving repositories for current github user.");
+                    repositories = repoClient.GetAllForCurrent().Result;
+                }
+                else
+                {
+                    _logger.Info($"Retrieving repositories for: {Organization}");
+                    repositories = repoClient.GetAllForOrg(Organization).Result;
+                }
 
                 var filter = _programOptions.ProjectFilter;
 
