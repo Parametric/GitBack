@@ -67,7 +67,7 @@ namespace GitBack
                 }
                 else
                 {
-                    _logger.Info($"Retrieving repositories for: {Organization}");
+                    _logger.Info(String.Format("Retrieving repositories for: ", Organization));
                     repositories = repoClient.GetAllForOrg(Organization).Result;
                 }
 
