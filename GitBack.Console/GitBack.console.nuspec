@@ -1,6 +1,6 @@
 ﻿<package>
   <metadata>
-    <i>GitBack.Console</id>
+    <id>GitBack.Console</id>
     <version>$version$</version>
     <authors>Parametric Portfolio Associates</authors>
     <owners>Parametric Portfolio Associates</owners>
@@ -8,6 +8,7 @@
     <description>Console app for backing up GitHub repos to disk</description>
   </metadata>
   <files>
-    <file src="bin\*" target="bin" />
+    <file src="bin\*.dll" target="bin" />
+    <file src="bin\*.xml" target="bin" />
   </files>
 </package>
