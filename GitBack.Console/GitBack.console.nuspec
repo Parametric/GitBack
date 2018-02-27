@@ -8,7 +8,8 @@
     <description>Console app for backing up GitHub repos to disk</description>
   </metadata>
   <files>
-    <file src="bin\*.dll" target="bin" />
-    <file src="bin\*.xml" target="bin" />
+    <file src="bin\Release\*.exe" />
+    <file src="bin\Release\*.dll" />
+    <file src="bin\Release\*.xml" />
   </files>
 </package>
