@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<package>
+  <metadata>
+    <id>GitBack.Console</id>
+    <version>$version$</version>
+    <authors>Parametric Portfolio Associates</authors>
+    <owners>Parametric Portfolio Associates</owners>
+    <projectUrl>https://github.com/Parametric/GitBack</projectUrl>
+    <description>Console app for backing up GitHub repos to disk</description>
+  </metadata>
+  <files>
+    <file src="bin\Release\*.config" />
+    <file src="bin\Release\*.exe" />
+    <file src="bin\Release\*.dll" />
+    <file src="bin\Release\*.xml" />
+  </files>
+</package>
