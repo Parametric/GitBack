@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using CommandLine;
 using log4net;
 using log4net.Config;
@@ -8,37 +9,58 @@ namespace GitBack.Console
 {
     public static class Start
     {
-        public static void Main(string[] args)
+        private static readonly IKernel Kernel = new StandardKernel();
+
+        public static int Main(string[] args)
         {
             XmlConfigurator.Configure();
+            Bootstrapper.ConfigureLogging(Kernel);
+            Bootstrapper.ConfigureParser(Kernel);
 
-            var options = new CommandLineOptions();
-            if (Parser.Default.ParseArguments(args, options))
-            {
-                var programOptions = ConvertCommandLineOptionsToProgramOptions(options);
-                var kernel = new StandardKernel();
-
-                Bootstrapper.ConfigureNinjectBindings(kernel, programOptions);
-
-                var logger = kernel.Get<ILog>();
-                logger.InfoFormat("Gitback starting...");
-
-                var program = kernel.Get<Program>();
-                program.Execute();
-            }
+            using (var parser = Kernel.Get<Parser>()) {
+                return parser.ParseArguments<CommandLineOptions>(args).MapResult(
+                    HandleOptions,
+                    HandleParseFailures
+                );
         }
+    }
 
-        private static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
+        private static int HandleParseFailures(IEnumerable<Error> parseErrors)
         {
-            return new ProgramOptions
+
+            var logger = Kernel.Get<ILog>();
+
+            logger.Error("Parsing Failed");
+            foreach (var error in parseErrors)
             {
-                Username = commandLineOptions.UserName,
-                Password = commandLineOptions.Password,
-                Organization = commandLineOptions.Organization,
-                BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
-                PathToGit = commandLineOptions.PathToGit,
-                ProjectFilter = commandLineOptions.ProjectFilter
-            };
+                logger.Error($"Parsing Error: {error.Tag}. {(error.StopsProcessing ? "Stopped" : "Did not stop")} processing");
+            }
+
+            return 1;
         }
+
+        private static int HandleOptions(CommandLineOptions options)
+        {
+            var programOptions = ConvertCommandLineOptionsToProgramOptions(options);
+            Bootstrapper.ConfigureGit(Kernel, programOptions);
+
+            var logger = Kernel.Get<ILog>();
+            logger.InfoFormat("Gitback starting...");
+
+            var program = Kernel.Get<Program>();
+            program.Execute();
+
+            return 0;
+        }
+
+        private static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions) => new ProgramOptions
+        {
+            Username = commandLineOptions.UserName,
+            Password = commandLineOptions.Password,
+            Organization = commandLineOptions.Organization,
+            BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
+            PathToGit = commandLineOptions.PathToGit,
+            ProjectFilter = commandLineOptions.ProjectFilter
+        };
     }
 }
