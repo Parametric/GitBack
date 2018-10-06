@@ -26,21 +26,5 @@ namespace GitBack.Console
 
         [Option('f', "filter projects regex", Required = false, HelpText = "Optional: Filter projects by name with a regular expression pattern")]
         public string ProjectFilter { get; set; }
-
-        [HelpOption]
-        public string GetUsage()
-        {
-            var application = this.GetType().Assembly;
-            var help = new HelpText
-            {
-                Heading = new HeadingInfo(application.GetName().Name, application.GetName().Version.ToString()),
-                AddDashesToOption = true,
-                MaximumDisplayWidth = 200
-            };
-
-            help.AddOptions(this);
-
-            return help;
-        }
     }
 }

@@ -2,7 +2,6 @@
 using System.IO;
 using FizzWare.NBuilder;
 using log4net;
-using log4net.Core;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -19,7 +18,8 @@ namespace GitBack.Tests
             var logger = Substitute.For<ILog>();
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
-                .All().WithConstructor(() => new GitRepository(gitApi, "name"))
+                .All()
+                .WithFactory(() => new GitRepository(gitApi, "name"))
                 .Build()
                 ;
             var context = new GitContext(gitApi, logger);
