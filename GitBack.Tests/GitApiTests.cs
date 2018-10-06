@@ -6,8 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using FizzWare.NBuilder;
 using log4net;
-using log4net.Core;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Octokit;
 
@@ -263,7 +263,7 @@ namespace GitBack.Tests
             var logger = Substitute.For<ILog>();
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
-            repoClient.GetAllForCurrent().Returns(x => { throw new AggregateException(); });
+            repoClient.GetAllForCurrent().Throws<AggregateException>();
 
             clientInitializer.CreateGitClient(programOptions.Username, programOptions.Password).Returns(repoClient);
 
