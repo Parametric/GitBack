@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using CommandLine;
 using log4net;
 using log4net.Config;
+using log4net.Repository.Hierarchy;
 using Ninject;
 
 namespace GitBack.Console
@@ -13,21 +15,31 @@ namespace GitBack.Console
 
         public static int Main(string[] args)
         {
-            XmlConfigurator.Configure();
-            Bootstrapper.ConfigureLogging(Kernel);
-            Bootstrapper.ConfigureParser(Kernel);
+            try
+            {
+                XmlConfigurator.Configure();
+                Bootstrapper.ConfigureLogging(Kernel);
+                Bootstrapper.ConfigureParser(Kernel);
 
-            using (var parser = Kernel.Get<Parser>()) {
-                return parser.ParseArguments<CommandLineOptions>(args).MapResult(
-                    HandleOptions,
-                    HandleParseFailures
-                );
+
+                using (var parser = Kernel.Get<Parser>())
+                {
+                    return parser.ParseArguments<CommandLineOptions>(args).MapResult(
+                        HandleOptions,
+                        HandleParseFailures
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                var logger = Kernel.Get<ILog>();
+                logger.Error("Program failed", e);
+                return e.HResult;
+            }
         }
-    }
 
         private static int HandleParseFailures(IEnumerable<Error> parseErrors)
         {
-
             var logger = Kernel.Get<ILog>();
 
             logger.Error("Parsing Failed");
