@@ -71,7 +71,6 @@ namespace GitBack.Console
             Password = commandLineOptions.Password,
             Organization = commandLineOptions.Organization,
             BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
-            PathToGit = commandLineOptions.PathToGit,
             ProjectFilter = commandLineOptions.ProjectFilter
         };
     }
