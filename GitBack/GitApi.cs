@@ -62,12 +62,12 @@ namespace GitBack
                 IReadOnlyList<Octokit.Repository> repositories;
                 if (String.IsNullOrWhiteSpace(Organization))
                 {
-                    _logger.Info("Retrieving repositories for current github user.");
+                    _logger.Info($"Retrieving repositories for current github user: {Username}.");
                     repositories = repoClient.GetAllForCurrent().Result;
                 }
                 else
                 {
-                    _logger.Info(String.Format("Retrieving repositories for: ", Organization));
+                    _logger.Info($"Retrieving repositories for: {Organization}");
                     repositories = repoClient.GetAllForOrg(Organization).Result;
                 }
 
