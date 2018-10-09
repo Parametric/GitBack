@@ -59,6 +59,8 @@
     <Compile Include="GitRepository.cs" />
     <Compile Include="IGitApi.cs" />
     <Compile Include="IGitContext.cs" />
+    <Compile Include="ILocalGitRepositoryHelper.cs" />
+    <Compile Include="LocalGitRepositoryHelper.cs" />
     <Compile Include="ProcessRunner.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramOptions.cs" />

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -9,29 +8,6 @@ using LibGit2Sharp;
 
 namespace GitBack
 {
-    public interface ILocalGitRepositoryHelper
-    {
-        Repository Clone(Uri sourceUrl, DirectoryInfo repositoryLocation, CloneOptions options);
-        MergeResult Pull(DirectoryInfo repositoryLocation, Signature merger, PullOptions options);
-    }
-
-    public class LocalGitRepositoryHelper : ILocalGitRepositoryHelper
-    {
-        public Repository Clone(Uri sourceUrl, DirectoryInfo repositoryLocation, CloneOptions options)
-        {
-            var repositoryPath = repositoryLocation.FullName;
-            var clonedPath = Repository.Clone(sourceUrl.AbsoluteUri, repositoryPath, options);
-            return new Repository(clonedPath);
-        }
-
-        public MergeResult Pull(DirectoryInfo repositoryLocation, Signature merger, PullOptions options)
-        {
-            var repositoryPath = repositoryLocation.FullName;
-            var repository = new Repository(repositoryPath);
-            return Commands.Pull(repository, merger, options);
-        }
-    }
-
     public class GitApi : IGitApi
     {
         private readonly ProgramOptions _programOptions;
