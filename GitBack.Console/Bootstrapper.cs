@@ -15,6 +15,7 @@ namespace GitBack.Console
 
             kernel.Bind<IGitApi>().To<GitApi>();
             kernel.Bind<IGitContext>().To<GitContext>();
+            kernel.Bind<ILocalGitRepositoryHelper>().To<LocalGitRepositoryHelper>();
 
             XmlConfigurator.Configure();
         }
