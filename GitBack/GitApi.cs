@@ -5,14 +5,38 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using log4net;
+using LibGit2Sharp;
 
 namespace GitBack
 {
+    public interface ILocalGitRepositoryHelper
+    {
+        Repository Clone(Uri sourceUrl, DirectoryInfo repositoryLocation, CloneOptions options);
+        MergeResult Pull(DirectoryInfo repositoryLocation, Signature merger, PullOptions options);
+    }
+
+    public class LocalGitRepositoryHelper : ILocalGitRepositoryHelper
+    {
+        public Repository Clone(Uri sourceUrl, DirectoryInfo repositoryLocation, CloneOptions options)
+        {
+            var repositoryPath = repositoryLocation.FullName;
+            var clonedPath = Repository.Clone(sourceUrl.AbsoluteUri, repositoryPath, options);
+            return new Repository(clonedPath);
+        }
+
+        public MergeResult Pull(DirectoryInfo repositoryLocation, Signature merger, PullOptions options)
+        {
+            var repositoryPath = repositoryLocation.FullName;
+            var repository = new Repository(repositoryPath);
+            return Commands.Pull(repository, merger, options);
+        }
+    }
+
     public class GitApi : IGitApi
     {
         private readonly ProgramOptions _programOptions;
         private readonly GitClientFactory _clientFactory;
-        private readonly ProcessRunner _processRunner;
+        private readonly ILocalGitRepositoryHelper _localRepositoryHelper;
         private readonly ILog _logger;
 
         public DirectoryInfo BackupLocation { get; private set; }
@@ -20,10 +44,10 @@ namespace GitBack
         public string Organization { get; private set; }
         public string Password { get; private set; }
 
-        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner, ILog logger)
+        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ILocalGitRepositoryHelper localRepositoryHelper, ILog logger)
         {
             _clientFactory = clientFactory;
-            _processRunner = processRunner;
+            _localRepositoryHelper = localRepositoryHelper;
             _logger = logger;
             _programOptions = programOptions;
             Username = programOptions.Username;
@@ -91,51 +115,42 @@ namespace GitBack
 
         public void Pull(string repositoryName)
         {
-            WriteToCmd(repositoryName, "pull");
+            var repositoryPath = Path.Combine(BackupLocation.FullName, repositoryName);
+            var repositoryLocation = new DirectoryInfo(repositoryPath);
+            var signature = new Signature("name", "email", DateTimeOffset.UtcNow);
+            var options = new PullOptions()
+            {
+                FetchOptions = new FetchOptions
+                {
+                    CredentialsProvider = CredentialsProvider
+                }
+            };
+            
+            _localRepositoryHelper.Pull(repositoryLocation, signature, options);
         }
 
         public void Clone(string repositoryName)
         {
-            WriteToCmd(repositoryName, "clone");
+            var owner = string.IsNullOrWhiteSpace(Organization) ? Username : Organization;
+            var gitUrl = new Uri($"https://github.com/{owner}/{repositoryName}.git");
+            var repositoryPath = Path.Combine(BackupLocation.FullName, repositoryName);
+            var repositoryLocation = new DirectoryInfo(repositoryPath);
+            
+            var options = new CloneOptions
+            {
+                CredentialsProvider = CredentialsProvider
+            };
+            _localRepositoryHelper.Clone(gitUrl, repositoryLocation, options);
+
         }
 
-        private void WriteToCmd(string repositoryName, string gitCommand)
+        private Credentials CredentialsProvider(string url, string username, SupportedCredentialTypes types)
         {
-            var outputDirectory = Path.Combine(BackupLocation.FullName, repositoryName);
-
-            var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization;
-
-            var args = "";
-
-            var giturl = string.Format("https://{0}:{1}@github.com/{2}/{3}.git", Username, Password, owner, repositoryName);
-
-            switch (gitCommand.ToLower())
+            return new UsernamePasswordCredentials
             {
-                case "pull":
-                    args = string.Format("-C {0} {1} {2}", outputDirectory, gitCommand, giturl);
-                    break;
-                case "clone":
-                    args = string.Format("{0} {1} {2}", gitCommand, giturl, outputDirectory);
-                    break;
-            }
-
-
-            var argsWithPasswordHidden = giturl.Replace(Password, "********");
-            _logger.InfoFormat("Executing Command: {0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
-
-            var startinfo = new ProcessStartInfo
-            {
-                FileName = _programOptions.PathToGit,
-                Arguments = args,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
+                Username = Username,
+                Password = Password,
             };
-
-            _processRunner.Run(startinfo);
         }
     }
 

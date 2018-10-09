@@ -6,10 +6,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using FizzWare.NBuilder;
 using log4net;
+using LibGit2Sharp;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Octokit;
+using Repository = Octokit.Repository;
+using Signature = Octokit.Signature;
 
 namespace GitBack.Tests
 {
@@ -133,7 +136,7 @@ namespace GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(programOptions, clientInitializer, Substitute.For<ILocalGitRepositoryHelper>(), Substitute.For<ILog>());
 
             // Act
             gitApi.GetRepositories();
@@ -163,7 +166,7 @@ namespace GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(programOptions, clientInitializer, Substitute.For<ILocalGitRepositoryHelper>(), Substitute.For<ILog>());
 
             // Act
             gitApi.GetRepositories();
@@ -198,7 +201,7 @@ namespace GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(programOptions, clientInitializer, Substitute.For<ILocalGitRepositoryHelper>(), Substitute.For<ILog>());
 
             // Act
             var results = gitApi.GetRepositories().ToList();
@@ -240,7 +243,7 @@ namespace GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(programOptions, clientInitializer, Substitute.For<ILocalGitRepositoryHelper>(), Substitute.For<ILog>());
 
             // Act
             var results = gitApi.GetRepositories().ToList();
@@ -267,7 +270,7 @@ namespace GitBack.Tests
 
             clientInitializer.CreateGitClient(programOptions.Username, programOptions.Password).Returns(repoClient);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, logger);
+            var gitApi = new GitApi(programOptions, clientInitializer, Substitute.For<ILocalGitRepositoryHelper>(), logger);
 
             // Act && Assert 
             Assert.Throws<AggregateException>(() => gitApi.GetRepositories());
@@ -280,24 +283,27 @@ namespace GitBack.Tests
             // Arrange
             var clientInitializer = Substitute.For<GitClientFactory>();
             var logger = Substitute.For<ILog>();
-            var processRunner = Substitute.For<ProcessRunner>(logger);
+            var localGitRepositoryHelper = Substitute.For<ILocalGitRepositoryHelper>();
 
+            var backupLocation = Path.Combine(Directory.GetCurrentDirectory(), "backup");
             var programOptions = new ProgramOptions()
             {
-                Username = "username",
-                Password = "password",
                 Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
-                PathToGit = "//some/path/to/git.exe"
+                BackupLocation = new DirectoryInfo(backupLocation)
             };
 
-            var gitApi = new GitApi(programOptions, clientInitializer, processRunner, logger);
+            const string repositoryName = "SomeRepo";
+            var gitApi = new GitApi(programOptions, clientInitializer, localGitRepositoryHelper, logger);
 
             // Act
-            gitApi.Pull("SomeRepo");
+            gitApi.Pull(repositoryName);
 
             // Assert
-            processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "pull")));
+            var expectedRepositoryLocation = Path.Combine(backupLocation, repositoryName);
+            localGitRepositoryHelper.Received().Pull(
+                Arg.Is<DirectoryInfo>(d => expectedRepositoryLocation.Equals(d.FullName)), 
+                Arg.Any<LibGit2Sharp.Signature>(), 
+                Arg.Any<PullOptions>());
         }
 
         [Test]
@@ -306,60 +312,29 @@ namespace GitBack.Tests
             // Arrange
             var clientInitializer = Substitute.For<GitClientFactory>();
             var logger = Substitute.For<ILog>();
-            var processRunner = Substitute.For<ProcessRunner>(logger);
+            var localGitRepositoryHelper = Substitute.For<ILocalGitRepositoryHelper>();
 
-            var programOptions = new ProgramOptions()
+            const string organization = "Organization";
+            var backupLocation = Path.Combine(Directory.GetCurrentDirectory(), "backup");
+            var programOptions = new ProgramOptions
             {
-                Username = "username",
-                Password = "password",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo(Directory.GetCurrentDirectory() + "\\backup"), 
-                PathToGit = "//some/path/to/git.exe"
+                Organization = organization,
+                BackupLocation = new DirectoryInfo(backupLocation)
             };
 
-            var gitApi = new GitApi(programOptions, clientInitializer, processRunner, logger);
+            const string repositoryName = "SomeRepo";
+            var gitApi = new GitApi(programOptions, clientInitializer, localGitRepositoryHelper, logger);
 
             // Act
-            gitApi.Clone("SomeRepo");
+            gitApi.Clone(repositoryName);
 
             // Assert
-            processRunner.Received().Run(Arg.Is<ProcessStartInfo>(arg => IsMatchingProcessStartInfo(arg, programOptions, "clone")));
-        }
-
-        private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions, string gitCommand)
-        {
-            var expectedArguments = "";
-            switch (gitCommand.ToLower())
-            {
-                case "pull":
-                    expectedArguments =@"-C " + Directory.GetCurrentDirectory() + @"\backup\SomeRepo pull https://username:password@github.com/organization/SomeRepo.git";
-
-                    break;
-
-                case "clone":
-                    expectedArguments = @"clone https://username:password@github.com/organization/SomeRepo.git " + Directory.GetCurrentDirectory() + @"\backup\SomeRepo";
-                    break;
-
-            }
-
-
-            Assert.That(arg.Arguments, Is.EqualTo(expectedArguments), "Arguments");
-            Assert.That(arg.WindowStyle, Is.EqualTo(ProcessWindowStyle.Hidden));
-            Assert.That(arg.CreateNoWindow, Is.True);
-            Assert.That(arg.RedirectStandardInput, Is.True);
-            Assert.That(arg.RedirectStandardOutput, Is.True);
-            Assert.That(arg.UseShellExecute, Is.False);
-
-            var result = arg.FileName == programOptions.PathToGit
-                                              && arg.Arguments == expectedArguments
-                                              && arg.WindowStyle == ProcessWindowStyle.Hidden
-                                              && arg.CreateNoWindow == true
-                                              && arg.RedirectStandardInput == true
-                                              && arg.RedirectStandardOutput == true
-                                              && arg.UseShellExecute == false;
-
-            return result;
-
+            var expectedUri = new Uri($"https://github.com/{organization}/{repositoryName}.git");
+            var expectedRepositoryLocation = Path.Combine(backupLocation, repositoryName);
+            localGitRepositoryHelper.Received().Clone(
+                Arg.Is<Uri>(u => expectedUri.Equals(u)), 
+                Arg.Is<DirectoryInfo>(d => expectedRepositoryLocation.Equals(d.FullName)), 
+                Arg.Any<CloneOptions>());
         }
     }
 }
