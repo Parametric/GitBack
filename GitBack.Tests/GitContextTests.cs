@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using FizzWare.NBuilder;
 using log4net;
@@ -16,10 +17,13 @@ namespace GitBack.Tests
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
             var logger = Substitute.For<ILog>();
+            const string name = "name";
+            var uri = new Uri($"https://example.com/{name}");
+            var repoDirectory = new DirectoryInfo($@"C:\temp\{name}");
             var allRepositories = Builder<GitRepository>
                 .CreateListOfSize(10)
                 .All()
-                .WithFactory(() => new GitRepository(gitApi, "name"))
+                .WithFactory(() => new GitRepository(gitApi, name, uri, repoDirectory))
                 .Build()
                 ;
             var context = new GitContext(gitApi, logger);
@@ -40,19 +44,19 @@ namespace GitBack.Tests
             var api = Substitute.For<IGitApi>();
             var logger = Substitute.For<ILog>();
             const string name = "name";
+            var uri = new Uri($"https://example.com/{name}");
+            var parentDirectory = new DirectoryInfo($@"C:\temp");
             var context = new GitContext(api, logger);
             var backupLocation = new DirectoryInfo("backup");
 
             var allRepositories = new List<GitRepository>
             {
-                Substitute.For<GitRepository>(api, name),
-                Substitute.For<GitRepository>(api, name),
-                Substitute.For<GitRepository>(api, name)
+                Substitute.For<GitRepository>(api, name, uri, parentDirectory, true),
+                Substitute.For<GitRepository>(api, name, uri, parentDirectory, true),
+                Substitute.For<GitRepository>(api, name, uri, parentDirectory, true)
             };
 
             api.GetRepositories().Returns(allRepositories);
-            api.GetBackupLocation().Returns(backupLocation);
-
 
             // Act
             context.BackupAllRepos();
@@ -60,7 +64,7 @@ namespace GitBack.Tests
             // Arrange
             foreach (var gitRepository in allRepositories)
             {
-               gitRepository.Received().Backup(backupLocation);
+               gitRepository.Received().Backup();
             }
         }
     }

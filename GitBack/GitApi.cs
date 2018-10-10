@@ -2,9 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 using log4net;
 using LibGit2Sharp;
+using Octokit;
+using Credentials = LibGit2Sharp.Credentials;
+using Signature = LibGit2Sharp.Signature;
 
 namespace GitBack
 {
@@ -15,10 +20,10 @@ namespace GitBack
         private readonly ILocalGitRepositoryHelper _localRepositoryHelper;
         private readonly ILog _logger;
 
-        public DirectoryInfo BackupLocation { get; private set; }
-        public string Username { get; private set; }
-        public string Organization { get; private set; }
-        public string Password { get; private set; }
+        public DirectoryInfo BackupLocation { get; }
+        public string Username { get; }
+        public string Organization { get; }
+        private string Password { get; }
 
         public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ILocalGitRepositoryHelper localRepositoryHelper, ILog logger)
         {
@@ -32,26 +37,6 @@ namespace GitBack
             Password = programOptions.Password;
         }
 
-        public string GetUsername()
-        {
-            return Username;
-        }
-
-        public string GetOrganization()
-        {
-            return Organization;
-        }
-
-        public DirectoryInfo GetBackupLocation()
-        {
-            return BackupLocation;
-        }
-
-        public string GetPassword()
-        {
-            return Password; 
-        }
-
         public IEnumerable<GitRepository> GetRepositories()
         {
             _logger.Info("Retrieving repositories from GitHub.");
@@ -60,7 +45,7 @@ namespace GitBack
                 var repoClient = _clientFactory.CreateGitClient(Username, Password);
 
                 IReadOnlyList<Octokit.Repository> repositories;
-                if (String.IsNullOrWhiteSpace(Organization))
+                if (string.IsNullOrWhiteSpace(Organization))
                 {
                     _logger.Info($"Retrieving repositories for current github user: {Username}.");
                     repositories = repoClient.GetAllForCurrent().Result;
@@ -73,28 +58,62 @@ namespace GitBack
 
                 var filter = _programOptions.ProjectFilter;
 
-                if (!String.IsNullOrEmpty(filter))
+                if (!string.IsNullOrEmpty(filter))
                 {
                     repositories = repositories.Where(x => Regex.IsMatch(x.Name, filter, RegexOptions.IgnoreCase)).ToList();
                 }
 
                 _logger.Info("Repositories retrieved from GitHub.");
 
-                return repositories.Select(repository => new GitRepository(this, repository.Name));
+                return repositories.Select(repository => 
+                    new GitRepository(this, repository.Name, new Uri(repository.CloneUrl), BackupLocation, true));
             }
-            catch (System.AggregateException e)
+            catch (AggregateException e)
             {
                 _logger.Error(e.Message, e);
                 throw;
             }
         }
 
-        public void Pull(string repositoryName)
+        public static string GetHostFqdn()
         {
-            var repositoryPath = Path.Combine(BackupLocation.FullName, repositoryName);
-            var repositoryLocation = new DirectoryInfo(repositoryPath);
-            var signature = new Signature("name", "email", DateTimeOffset.UtcNow);
-            var options = new PullOptions()
+            var domainName = $".{IPGlobalProperties.GetIPGlobalProperties().DomainName}";
+            var hostName = Dns.GetHostName();
+
+            if(!hostName.EndsWith(domainName))
+            {
+                hostName += domainName;
+            }
+
+            return hostName;
+        }
+
+        private Signature GetSignature()
+        {
+            var userEmailsClient = _clientFactory.CreateEmailsClient(Username, Password);
+            string email = null;
+            try
+            {
+                var emailAddress = userEmailsClient.GetAll().Result.FirstOrDefault(e => e.Primary);
+                email = emailAddress?.Email;
+            }
+            catch (AggregateException e)
+            {
+                _logger.Info($"Could not retrieve {Username}'s email", e);
+            }
+
+            if (email == null)
+            {
+                email = $"{Username}@{GetHostFqdn()}";
+            }
+
+            return new Signature(Username, email, DateTimeOffset.UtcNow);
+        }
+
+        public void Pull(DirectoryInfo repositoryLocation)
+        {
+            var signature = GetSignature();
+            var options = new PullOptions
             {
                 FetchOptions = new FetchOptions
                 {
@@ -105,13 +124,8 @@ namespace GitBack
             _localRepositoryHelper.Pull(repositoryLocation, signature, options);
         }
 
-        public void Clone(string repositoryName)
+        public void Clone(Uri gitUrl, DirectoryInfo repositoryLocation)
         {
-            var owner = string.IsNullOrWhiteSpace(Organization) ? Username : Organization;
-            var gitUrl = new Uri($"https://github.com/{owner}/{repositoryName}.git");
-            var repositoryPath = Path.Combine(BackupLocation.FullName, repositoryName);
-            var repositoryLocation = new DirectoryInfo(repositoryPath);
-            
             var options = new CloneOptions
             {
                 CredentialsProvider = CredentialsProvider

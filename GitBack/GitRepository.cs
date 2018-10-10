@@ -1,44 +1,55 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace GitBack
 {
     public class GitRepository
     {
-        public string Name { get; set; }
+        public string Name { get; }
+        public Uri Url { get; }
+        public DirectoryInfo ParentDirectory { get; }
+        public DirectoryInfo GitDirectory { get; }
         private readonly IGitApi _gitApi;
 
-        public GitRepository(IGitApi gitApi, string name)
+        public GitRepository(IGitApi gitApi, string name, Uri url, DirectoryInfo directory, bool isParentDirectory=false)
+            : this(gitApi, name, url, 
+                isParentDirectory? directory : directory.Parent,
+                isParentDirectory? new DirectoryInfo(Path.Combine(directory.FullName, name)) : directory)
+        {
+        }
+
+        public GitRepository(IGitApi gitApi, string name, Uri url, DirectoryInfo parentDirectory, DirectoryInfo gitDirectory)
         {
             _gitApi = gitApi;
             Name = name;
-        }
-
-        public string GetName()
-        {
-            return Name;
+            Url = url;
+            ParentDirectory = parentDirectory;
+            GitDirectory = gitDirectory;
         }
 
         public void Pull()
         {
-            _gitApi.Pull(Name);
-            
+            _gitApi.Pull(GitDirectory);
         }
 
         public void Clone()
         {
-            _gitApi.Clone(Name);
+            _gitApi.Clone(Url, GitDirectory);
         }
 
-        public bool ExistsInDirectory(DirectoryInfo directory)
+        public bool ExistsInDirectory()
         {
-            var fullPath = Path.Combine(directory.FullName, Name);
-            var repoDirectory = new DirectoryInfo(fullPath);
-            return repoDirectory.Exists;
-        }
+            if (!ParentDirectory.Exists)
+            {
+                ParentDirectory.Create();
+            }
 
-        public void Backup(DirectoryInfo backupDirectory)
+            return GitDirectory.Exists;
+        }
+        // fix this to use GitDirectory
+        public void Backup()
         {
-            if (ExistsInDirectory(backupDirectory))
+            if (ExistsInDirectory())
             {
                 Pull();
             }

@@ -34,7 +34,7 @@ namespace GitBack.Tests
             var gitApi = new GitApi(programOptions, null, null, null); 
 
             // Act
-            var username = gitApi.GetUsername();
+            var username = gitApi.Username;
             var result = username.Equals("username"); 
 
             // Assert
@@ -56,7 +56,7 @@ namespace GitBack.Tests
             var gitApi = new GitApi(programOptions, null, null, null);
 
             // Act
-            var organization = gitApi.GetOrganization();
+            var organization = gitApi.Organization;
             var result = organization.Equals("organization");
 
             // Assert
@@ -81,33 +81,8 @@ namespace GitBack.Tests
             var gitApi = new GitApi(programOptions, null, null, null);
 
             // Act
-            var backup = gitApi.GetBackupLocation();
+            var backup = gitApi.BackupLocation;
             var result = backup.Equals(backupLocation); 
-
-            // Assert
-            Assert.That(result, Is.True);
-        }
-
-        [Test]
-        public void GetPassword_ReturnsCorrectPassword()
-        {
-            // Arrange
-            const string password = "password";
-
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
-                Password = password
-            };
-
-
-            var gitApi = new GitApi(programOptions, null, null, null);
-
-            // Act
-            var backup = gitApi.GetPassword();
-            var result = backup.Equals(password);
 
             // Assert
             Assert.That(result, Is.True);
@@ -195,7 +170,7 @@ namespace GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var allRepositories = Builder<Repository>.CreateListOfSize(2).Build().ToList();
+            var allRepositories = Builder<Repository>.CreateListOfSize(2).All().With(r => r.CloneUrl, "https://example.com").Build().ToList();
             var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
             task.RunSynchronously();
 
@@ -212,7 +187,7 @@ namespace GitBack.Tests
             {
                 var expected = allRepositories[i];
                 var actual = results[i];
-                Assert.That(actual.GetName(), Is.EqualTo(expected.Name));
+                Assert.That(actual.Name, Is.EqualTo(expected.Name));
             }
         }
 
@@ -237,7 +212,7 @@ namespace GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var allRepositories = Builder<Repository>.CreateListOfSize(2).Build().ToList();
+            var allRepositories = Builder<Repository>.CreateListOfSize(2).All().With(r => r.CloneUrl, "https://example.com").Build().ToList();
             var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
             task.RunSynchronously();
 
@@ -250,7 +225,7 @@ namespace GitBack.Tests
 
             // Assert
             Assert.That(results, Has.Count.EqualTo(1));
-            Assert.That(results[0].GetName(), Is.EqualTo(allRepositories[0].Name));
+            Assert.That(results[0].Name, Is.EqualTo(allRepositories[0].Name));
         }
 
         [Test]
@@ -286,22 +261,23 @@ namespace GitBack.Tests
             var localGitRepositoryHelper = Substitute.For<ILocalGitRepositoryHelper>();
 
             var backupLocation = Path.Combine(Directory.GetCurrentDirectory(), "backup");
-            var programOptions = new ProgramOptions()
+            var programOptions = new ProgramOptions
             {
+                Username = "user",
                 Organization = "organization",
                 BackupLocation = new DirectoryInfo(backupLocation)
             };
 
             const string repositoryName = "SomeRepo";
+            var repositoryLocation = new DirectoryInfo(Path.Combine(backupLocation, repositoryName));
             var gitApi = new GitApi(programOptions, clientInitializer, localGitRepositoryHelper, logger);
 
             // Act
-            gitApi.Pull(repositoryName);
+            gitApi.Pull(repositoryLocation);
 
             // Assert
-            var expectedRepositoryLocation = Path.Combine(backupLocation, repositoryName);
             localGitRepositoryHelper.Received().Pull(
-                Arg.Is<DirectoryInfo>(d => expectedRepositoryLocation.Equals(d.FullName)), 
+                Arg.Is<DirectoryInfo>(d => repositoryLocation.Equals(d)), 
                 Arg.Any<LibGit2Sharp.Signature>(), 
                 Arg.Any<PullOptions>());
         }
@@ -323,17 +299,17 @@ namespace GitBack.Tests
             };
 
             const string repositoryName = "SomeRepo";
+            var uri = new Uri($"https://github.com/{organization}/{repositoryName}.git");
+            var repositoryLocation = new DirectoryInfo(Path.Combine(backupLocation, repositoryName));
             var gitApi = new GitApi(programOptions, clientInitializer, localGitRepositoryHelper, logger);
 
             // Act
-            gitApi.Clone(repositoryName);
+            gitApi.Clone(uri, repositoryLocation);
 
             // Assert
-            var expectedUri = new Uri($"https://github.com/{organization}/{repositoryName}.git");
-            var expectedRepositoryLocation = Path.Combine(backupLocation, repositoryName);
             localGitRepositoryHelper.Received().Clone(
-                Arg.Is<Uri>(u => expectedUri.Equals(u)), 
-                Arg.Is<DirectoryInfo>(d => expectedRepositoryLocation.Equals(d.FullName)), 
+                Arg.Is<Uri>(u => uri.Equals(u)), 
+                Arg.Is<DirectoryInfo>(d => repositoryLocation.Equals(d)), 
                 Arg.Any<CloneOptions>());
         }
     }
