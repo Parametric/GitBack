@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,12 +11,11 @@ using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Octokit;
 using Repository = Octokit.Repository;
-using Signature = Octokit.Signature;
 
 namespace GitBack.Tests
 {
     [TestFixture]
-    class GitApiTests
+    public class GitApiTests
     {
         [Test]
         public void GetUsername_ReturnsCorrectUsername()
@@ -28,7 +26,7 @@ namespace GitBack.Tests
                 Username = "username",
                 Organization = "organization",
                 BackupLocation = new DirectoryInfo("backup"),
-                Password = "password"
+                Token = "password"
             };
 
             var gitApi = new GitApi(programOptions, null, null, null); 
@@ -50,7 +48,7 @@ namespace GitBack.Tests
                 Username = "username",
                 Organization = "organization",
                 BackupLocation = new DirectoryInfo("backup"),
-                Password = "password"
+                Token = "password"
             };
 
             var gitApi = new GitApi(programOptions, null, null, null);
@@ -74,7 +72,7 @@ namespace GitBack.Tests
                 Username = "username",
                 Organization = "organization",
                 BackupLocation = backupLocation,
-                Password = "password"
+                Token = "password"
             };
 
            
@@ -99,7 +97,7 @@ namespace GitBack.Tests
             var programOptions = new ProgramOptions()
             {
                 Username = "username",
-                Password = "password",
+                Token = "password",
                 Organization = organization,
                 BackupLocation = backupLocation,
             };
@@ -107,7 +105,7 @@ namespace GitBack.Tests
             var repoClient = Substitute.For<IRepositoriesClient>();
             var clientInitializer = Substitute.For<GitClientFactory>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -128,16 +126,15 @@ namespace GitBack.Tests
             var programOptions = new ProgramOptions()
             {
                 Username = "username",
-                Password = "password",
+                Token = "password",
                 Organization = "organization",
                 BackupLocation = backupLocation,
             };
 
-
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -158,7 +155,7 @@ namespace GitBack.Tests
             var programOptions = new ProgramOptions()
             {
                 Username = "username",
-                Password = "password",
+                Token = "password",
                 Organization = null,
                 BackupLocation = backupLocation,
             }; 
@@ -166,7 +163,7 @@ namespace GitBack.Tests
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -199,7 +196,7 @@ namespace GitBack.Tests
             var programOptions = new ProgramOptions()
             {
                 Username = "username",
-                Password = "password",
+                Token = "password",
                 Organization = null,
                 BackupLocation = backupLocation,
                 ProjectFilter = "1",
@@ -208,7 +205,7 @@ namespace GitBack.Tests
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -235,7 +232,7 @@ namespace GitBack.Tests
             var programOptions = new ProgramOptions()
             {
                 Username = "username",
-                Password = "password"
+                Token = "password"
             };
 
             var logger = Substitute.For<ILog>();
@@ -243,7 +240,7 @@ namespace GitBack.Tests
             var repoClient = Substitute.For<IRepositoriesClient>();
             repoClient.GetAllForCurrent().Throws<AggregateException>();
 
-            clientInitializer.CreateGitClient(programOptions.Username, programOptions.Password).Returns(repoClient);
+            clientInitializer.CreateGitClient(programOptions.Username, programOptions.Token).Returns(repoClient);
 
             var gitApi = new GitApi(programOptions, clientInitializer, Substitute.For<ILocalGitRepositoryHelper>(), logger);
 

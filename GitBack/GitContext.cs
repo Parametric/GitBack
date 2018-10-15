@@ -15,10 +15,7 @@ namespace GitBack
             _logger = logger;
         }
 
-        public IEnumerable<GitRepository> GetRepositories()
-        {
-            return _gitApi.GetRepositories();
-        }
+        public IEnumerable<GitRepository> GetRepositories() => _gitApi.GetRepositories();
 
         public void BackupAllRepos()
         {            

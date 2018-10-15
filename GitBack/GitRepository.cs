@@ -20,22 +20,16 @@ namespace GitBack
 
         public GitRepository(IGitApi gitApi, string name, Uri url, DirectoryInfo parentDirectory, DirectoryInfo gitDirectory)
         {
-            _gitApi = gitApi;
-            Name = name;
-            Url = url;
+            _gitApi = gitApi ?? throw new ArgumentNullException(nameof(gitApi));
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Url = url ?? throw new ArgumentNullException(nameof(url));
             ParentDirectory = parentDirectory;
-            GitDirectory = gitDirectory;
+            GitDirectory = gitDirectory ?? throw new ArgumentNullException(nameof(gitDirectory));
         }
 
-        public void Pull()
-        {
-            _gitApi.Pull(GitDirectory);
-        }
+        public void Pull() => _gitApi?.Pull(GitDirectory);
 
-        public void Clone()
-        {
-            _gitApi.Clone(Url, GitDirectory);
-        }
+        public void Clone() => _gitApi?.Clone(Url, GitDirectory);
 
         public bool ExistsInDirectory()
         {
@@ -46,7 +40,7 @@ namespace GitBack
 
             return GitDirectory.Exists;
         }
-        // fix this to use GitDirectory
+        
         public void Backup()
         {
             if (ExistsInDirectory())
