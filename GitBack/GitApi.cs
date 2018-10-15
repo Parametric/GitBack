@@ -34,7 +34,7 @@ namespace GitBack
             Username = programOptions.Username;
             Organization = programOptions.Organization;
             BackupLocation = programOptions.BackupLocation;
-            Password = programOptions.Password;
+            Password = programOptions.Token;
         }
 
         public IEnumerable<GitRepository> GetRepositories()
@@ -134,14 +134,11 @@ namespace GitBack
 
         }
 
-        private Credentials CredentialsProvider(string url, string username, SupportedCredentialTypes types)
+        private Credentials CredentialsProvider(string url, string username, SupportedCredentialTypes types) => new UsernamePasswordCredentials
         {
-            return new UsernamePasswordCredentials
-            {
-                Username = Username,
-                Password = Password,
-            };
-        }
+            Username = Username,
+            Password = Password,
+        };
     }
 
 }

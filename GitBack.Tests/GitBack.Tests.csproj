@@ -74,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GitApiTests.cs" />
+    <Compile Include="GitClientFactoryTests.cs" />
     <Compile Include="GitContextTests.cs" />
     <Compile Include="GitRepositoryTests.cs" />
     <Compile Include="ProgramTests.cs" />

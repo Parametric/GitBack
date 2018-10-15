@@ -46,6 +46,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -53,6 +54,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigProperties.cs" />
+    <Compile Include="ConfigPropertiesKeyedCollection.cs" />
     <Compile Include="GitApi.cs" />
     <Compile Include="GitClientFactory.cs" />
     <Compile Include="GitContext.cs" />
