@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 using log4net;
+using LibGit2Sharp;
+using Octokit;
+using Credentials = LibGit2Sharp.Credentials;
+using Signature = LibGit2Sharp.Signature;
 
 namespace GitBack
 {
@@ -12,44 +17,24 @@ namespace GitBack
     {
         private readonly ProgramOptions _programOptions;
         private readonly GitClientFactory _clientFactory;
-        private readonly ProcessRunner _processRunner;
+        private readonly ILocalGitRepositoryHelper _localRepositoryHelper;
         private readonly ILog _logger;
 
-        public DirectoryInfo BackupLocation { get; private set; }
-        public string Username { get; private set; }
-        public string Organization { get; private set; }
-        public string Password { get; private set; }
+        public DirectoryInfo BackupLocation { get; }
+        public string Username { get; }
+        public string Organization { get; }
+        private string Password { get; }
 
-        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner, ILog logger)
+        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ILocalGitRepositoryHelper localRepositoryHelper, ILog logger)
         {
             _clientFactory = clientFactory;
-            _processRunner = processRunner;
+            _localRepositoryHelper = localRepositoryHelper;
             _logger = logger;
             _programOptions = programOptions;
             Username = programOptions.Username;
             Organization = programOptions.Organization;
             BackupLocation = programOptions.BackupLocation;
-            Password = programOptions.Password;
-        }
-
-        public string GetUsername()
-        {
-            return Username;
-        }
-
-        public string GetOrganization()
-        {
-            return Organization;
-        }
-
-        public DirectoryInfo GetBackupLocation()
-        {
-            return BackupLocation;
-        }
-
-        public string GetPassword()
-        {
-            return Password; 
+            Password = programOptions.Token;
         }
 
         public IEnumerable<GitRepository> GetRepositories()
@@ -60,83 +45,100 @@ namespace GitBack
                 var repoClient = _clientFactory.CreateGitClient(Username, Password);
 
                 IReadOnlyList<Octokit.Repository> repositories;
-                if (String.IsNullOrWhiteSpace(Organization))
+                if (string.IsNullOrWhiteSpace(Organization))
                 {
-                    _logger.Info("Retrieving repositories for current github user.");
+                    _logger.Info($"Retrieving repositories for current github user: {Username}.");
                     repositories = repoClient.GetAllForCurrent().Result;
                 }
                 else
                 {
-                    _logger.Info(String.Format("Retrieving repositories for: ", Organization));
+                    _logger.Info($"Retrieving repositories for: {Organization}");
                     repositories = repoClient.GetAllForOrg(Organization).Result;
                 }
 
                 var filter = _programOptions.ProjectFilter;
 
-                if (!String.IsNullOrEmpty(filter))
+                if (!string.IsNullOrEmpty(filter))
                 {
                     repositories = repositories.Where(x => Regex.IsMatch(x.Name, filter, RegexOptions.IgnoreCase)).ToList();
                 }
 
                 _logger.Info("Repositories retrieved from GitHub.");
 
-                return repositories.Select(repository => new GitRepository(this, repository.Name));
+                return repositories.Select(repository => 
+                    new GitRepository(this, repository.Name, new Uri(repository.CloneUrl), BackupLocation, true));
             }
-            catch (System.AggregateException e)
+            catch (AggregateException e)
             {
                 _logger.Error(e.Message, e);
                 throw;
             }
         }
 
-        public void Pull(string repositoryName)
+        public static string GetHostFqdn()
         {
-            WriteToCmd(repositoryName, "pull");
-        }
+            var domainName = $".{IPGlobalProperties.GetIPGlobalProperties().DomainName}";
+            var hostName = Dns.GetHostName();
 
-        public void Clone(string repositoryName)
-        {
-            WriteToCmd(repositoryName, "clone");
-        }
-
-        private void WriteToCmd(string repositoryName, string gitCommand)
-        {
-            var outputDirectory = Path.Combine(BackupLocation.FullName, repositoryName);
-
-            var owner = String.IsNullOrWhiteSpace(Organization) ? Username : Organization;
-
-            var args = "";
-
-            var giturl = string.Format("https://{0}:{1}@github.com/{2}/{3}.git", Username, Password, owner, repositoryName);
-
-            switch (gitCommand.ToLower())
+            if(!hostName.EndsWith(domainName))
             {
-                case "pull":
-                    args = string.Format("-C {0} {1} {2}", outputDirectory, gitCommand, giturl);
-                    break;
-                case "clone":
-                    args = string.Format("{0} {1} {2}", gitCommand, giturl, outputDirectory);
-                    break;
+                hostName += domainName;
             }
 
-
-            var argsWithPasswordHidden = giturl.Replace(Password, "********");
-            _logger.InfoFormat("Executing Command: {0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
-
-            var startinfo = new ProcessStartInfo
-            {
-                FileName = _programOptions.PathToGit,
-                Arguments = args,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-
-            _processRunner.Run(startinfo);
+            return hostName;
         }
+
+        private Signature GetSignature()
+        {
+            var userEmailsClient = _clientFactory.CreateEmailsClient(Username, Password);
+            string email = null;
+            try
+            {
+                var emailAddress = userEmailsClient.GetAll().Result.FirstOrDefault(e => e.Primary);
+                email = emailAddress?.Email;
+            }
+            catch (AggregateException e)
+            {
+                _logger.Info($"Could not retrieve {Username}'s email", e);
+            }
+
+            if (email == null)
+            {
+                email = $"{Username}@{GetHostFqdn()}";
+            }
+
+            return new Signature(Username, email, DateTimeOffset.UtcNow);
+        }
+
+        public void Pull(DirectoryInfo repositoryLocation)
+        {
+            var signature = GetSignature();
+            var options = new PullOptions
+            {
+                FetchOptions = new FetchOptions
+                {
+                    CredentialsProvider = CredentialsProvider
+                }
+            };
+            
+            _localRepositoryHelper.Pull(repositoryLocation, signature, options);
+        }
+
+        public void Clone(Uri gitUrl, DirectoryInfo repositoryLocation)
+        {
+            var options = new CloneOptions
+            {
+                CredentialsProvider = CredentialsProvider
+            };
+            _localRepositoryHelper.Clone(gitUrl, repositoryLocation, options);
+
+        }
+
+        private Credentials CredentialsProvider(string url, string username, SupportedCredentialTypes types) => new UsernamePasswordCredentials
+        {
+            Username = Username,
+            Password = Password,
+        };
     }
 
 }

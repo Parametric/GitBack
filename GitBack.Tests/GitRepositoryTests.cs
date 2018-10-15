@@ -1,4 +1,6 @@
-﻿using NSubstitute;
+﻿using System;
+using System.IO;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace GitBack.Tests
@@ -12,10 +14,12 @@ namespace GitBack.Tests
             // Arrange
             var api = Substitute.For<IGitApi>();
             const string name = "name";
-            var gitRepository = new GitRepository(api, name);
+            var uri = new Uri($"https://example.com/{name}");
+            var repoDirectory = new DirectoryInfo($@"C:\temp\{name}");
+            var gitRepository = new GitRepository(api, name, uri, repoDirectory);
 
             // Act
-            var result = gitRepository.GetName();
+            var result = gitRepository.Name;
 
             // Assert
             Assert.That(result, Is.EqualTo(name));
@@ -27,14 +31,16 @@ namespace GitBack.Tests
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
             const string name = "repository name";
-
-            var repository = new GitRepository(gitApi, name); 
+            var uri = new Uri($"https://example.com/{name}");
+            var repoParentDirectory = new DirectoryInfo($@"C:\temp");
+            var repoDirectory = new DirectoryInfo(Path.Combine(repoParentDirectory.FullName, name));
+            var repository = new GitRepository(gitApi, name, uri, repoParentDirectory, true); 
 
             // Act
             repository.Pull();
 
             // Assert
-            gitApi.Received().Pull(name);
+            gitApi.Received().Pull(Arg.Is<DirectoryInfo>(actual => repoDirectory.FullName.Equals(actual.FullName)));
         }
 
         [Test]
@@ -43,14 +49,15 @@ namespace GitBack.Tests
             // Arrange
             var gitApi = Substitute.For<IGitApi>();
             const string name = "repository name";
-
-            var repository = new GitRepository(gitApi, name);
+            var uri = new Uri($"https://example.com/{name}");
+            var repoDirectory = new DirectoryInfo($@"C:\temp\{name}");
+            var repository = new GitRepository(gitApi, name, uri, repoDirectory);
 
             // Act
             repository.Clone();
 
             // Assert
-            gitApi.Received().Clone(name);
+            gitApi.Received().Clone(uri, repoDirectory);
         }
     }
 }

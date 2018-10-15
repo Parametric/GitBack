@@ -1,44 +1,49 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace GitBack
 {
     public class GitRepository
     {
-        public string Name { get; set; }
+        public string Name { get; }
+        public Uri Url { get; }
+        public DirectoryInfo ParentDirectory { get; }
+        public DirectoryInfo GitDirectory { get; }
         private readonly IGitApi _gitApi;
 
-        public GitRepository(IGitApi gitApi, string name)
+        public GitRepository(IGitApi gitApi, string name, Uri url, DirectoryInfo directory, bool isParentDirectory=false)
+            : this(gitApi, name, url, 
+                isParentDirectory? directory : directory.Parent,
+                isParentDirectory? new DirectoryInfo(Path.Combine(directory.FullName, name)) : directory)
         {
-            _gitApi = gitApi;
-            Name = name;
         }
 
-        public string GetName()
+        public GitRepository(IGitApi gitApi, string name, Uri url, DirectoryInfo parentDirectory, DirectoryInfo gitDirectory)
         {
-            return Name;
+            _gitApi = gitApi ?? throw new ArgumentNullException(nameof(gitApi));
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Url = url ?? throw new ArgumentNullException(nameof(url));
+            ParentDirectory = parentDirectory;
+            GitDirectory = gitDirectory ?? throw new ArgumentNullException(nameof(gitDirectory));
         }
 
-        public void Pull()
-        {
-            _gitApi.Pull(Name);
-            
-        }
+        public void Pull() => _gitApi?.Pull(GitDirectory);
 
-        public void Clone()
-        {
-            _gitApi.Clone(Name);
-        }
+        public void Clone() => _gitApi?.Clone(Url, GitDirectory);
 
-        public bool ExistsInDirectory(DirectoryInfo directory)
+        public bool ExistsInDirectory()
         {
-            var fullPath = Path.Combine(directory.FullName, Name);
-            var repoDirectory = new DirectoryInfo(fullPath);
-            return repoDirectory.Exists;
-        }
+            if (!ParentDirectory.Exists)
+            {
+                ParentDirectory.Create();
+            }
 
-        public void Backup(DirectoryInfo backupDirectory)
+            return GitDirectory.Exists;
+        }
+        
+        public void Backup()
         {
-            if (ExistsInDirectory(backupDirectory))
+            if (ExistsInDirectory())
             {
                 Pull();
             }
