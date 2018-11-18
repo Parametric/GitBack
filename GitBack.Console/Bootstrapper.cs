@@ -1,31 +1,40 @@
 ﻿using System;
+using CommandLine;
 using log4net;
 using log4net.Config;
 using Ninject;
 
 namespace GitBack.Console
 {
-    class Bootstrapper
+    public static class Bootstrapper
     {
-        public static void ConfigureNinjectBindings(IKernel kernel, ProgramOptions programOptions)
+        private static IKernel _kernel;
+        public static IKernel Kernel {
+            get => _kernel ?? (_kernel = new StandardKernel());
+            set => _kernel = value;
+        }
+
+        public static void ConfigureNinjectBindings()
         {
-            kernel.Bind<ProgramOptions>().ToConstant(programOptions);
-            kernel.Bind<ILog>().ToMethod(context =>
+            XmlConfigurator.Configure();
+
+            Kernel.Bind<ILog>().ToMethod(context =>
             {
-                Type type;
-                if (context.Request.ParentRequest == null)
-                    type = context.Request.Service;
-                else
-                    type = context.Request.ParentRequest.Service;
+                var type = context.Request.ParentRequest == null
+                    ? context.Request.Service
+                    : context.Request.ParentRequest.Service;
 
                 var log4NetLogger = LogManager.GetLogger(type);
                 return log4NetLogger;
             });
 
-            kernel.Bind<IGitApi>().To<GitApi>();
-            kernel.Bind<IGitContext>().To<GitContext>();
+            Kernel.Bind<IGitApi>().To<GitApi>();
+            Kernel.Bind<IGitContext>().To<GitContext>();
+            Kernel.Bind<IArgumentParser>().To<ArgumentParser>();
+            
 
-            XmlConfigurator.Configure();
+
+            
         }
     }
 }

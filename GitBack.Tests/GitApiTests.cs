@@ -8,6 +8,7 @@ using FizzWare.NBuilder;
 using log4net;
 using log4net.Core;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Octokit;
 
@@ -28,7 +29,8 @@ namespace GitBack.Tests
                 Password = "password"
             };
 
-            var gitApi = new GitApi(programOptions, null, null, null); 
+            var gitApi = new GitApi(null, null, null);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             var username = gitApi.GetUsername();
@@ -50,7 +52,8 @@ namespace GitBack.Tests
                 Password = "password"
             };
 
-            var gitApi = new GitApi(programOptions, null, null, null);
+            var gitApi = new GitApi(null, null, null);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             var organization = gitApi.GetOrganization();
@@ -75,7 +78,8 @@ namespace GitBack.Tests
             };
 
            
-            var gitApi = new GitApi(programOptions, null, null, null);
+            var gitApi = new GitApi(null, null, null);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             var backup = gitApi.GetBackupLocation();
@@ -100,7 +104,8 @@ namespace GitBack.Tests
             };
 
 
-            var gitApi = new GitApi(programOptions, null, null, null);
+            var gitApi = new GitApi(null, null, null);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             var backup = gitApi.GetPassword();
@@ -133,7 +138,8 @@ namespace GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(clientInitializer, null, Substitute.For<ILog>());
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             gitApi.GetRepositories();
@@ -163,7 +169,8 @@ namespace GitBack.Tests
                 .Returns(repoClient)
                 ;
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(clientInitializer, null, Substitute.For<ILog>());
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             gitApi.GetRepositories();
@@ -198,7 +205,8 @@ namespace GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(clientInitializer, null, Substitute.For<ILog>());
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             var results = gitApi.GetRepositories().ToList();
@@ -240,7 +248,8 @@ namespace GitBack.Tests
 
             repoClient.GetAllForCurrent().Returns(task);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, Substitute.For<ILog>());
+            var gitApi = new GitApi(clientInitializer, null, Substitute.For<ILog>());
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             var results = gitApi.GetRepositories().ToList();
@@ -263,11 +272,12 @@ namespace GitBack.Tests
             var logger = Substitute.For<ILog>();
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
-            repoClient.GetAllForCurrent().Returns(x => { throw new AggregateException(); });
+            repoClient.GetAllForCurrent().Throws<AggregateException>();
 
             clientInitializer.CreateGitClient(programOptions.Username, programOptions.Password).Returns(repoClient);
 
-            var gitApi = new GitApi(programOptions, clientInitializer, null, logger);
+            var gitApi = new GitApi(clientInitializer, null, logger);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act && Assert 
             Assert.Throws<AggregateException>(() => gitApi.GetRepositories());
@@ -291,7 +301,8 @@ namespace GitBack.Tests
                 PathToGit = "//some/path/to/git.exe"
             };
 
-            var gitApi = new GitApi(programOptions, clientInitializer, processRunner, logger);
+            var gitApi = new GitApi(clientInitializer, processRunner, logger);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             gitApi.Pull("SomeRepo");
@@ -317,7 +328,8 @@ namespace GitBack.Tests
                 PathToGit = "//some/path/to/git.exe"
             };
 
-            var gitApi = new GitApi(programOptions, clientInitializer, processRunner, logger);
+            var gitApi = new GitApi(clientInitializer, processRunner, logger);
+            gitApi.SetProgramOptions(programOptions);
 
             // Act
             gitApi.Clone("SomeRepo");

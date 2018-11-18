@@ -1,4 +1,5 @@
 *.cache
+*.ncrunchsolution
 bin
 obj
 packages

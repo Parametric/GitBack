@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using CommandLine;
 using log4net;
 using log4net.Config;
@@ -8,29 +9,68 @@ namespace GitBack.Console
 {
     public static class Start
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             XmlConfigurator.Configure();
+            Bootstrapper.ConfigureNinjectBindings();
+            var argumentParser = Bootstrapper.Kernel.Get<IArgumentParser>();
+            var result = argumentParser.ParseArguments(args);
+            return result;
+        }
+    }
 
-            var options = new CommandLineOptions();
-            if (Parser.Default.ParseArguments(args, options))
+    public interface IArgumentParser
+    {
+        int ParseArguments(string[] arguments);
+    }
+
+    public class ArgumentParser : IArgumentParser
+    {
+        private readonly ILog _logger;
+        private readonly IGitApi _gitApi;
+
+        public ArgumentParser(IGitApi gitApi, ILog logger)
+        {
+            _logger = logger;
+            _gitApi = gitApi;
+        }
+
+        public int ParseArguments(string[] arguments)
+        {
+            using (var parser = new Parser(s => s.HelpWriter = System.Console.Out))
             {
-                var programOptions = ConvertCommandLineOptionsToProgramOptions(options);
-                var kernel = new StandardKernel();
-
-                Bootstrapper.ConfigureNinjectBindings(kernel, programOptions);
-
-                var logger = kernel.Get<ILog>();
-                logger.InfoFormat("Gitback starting...");
-
-                var program = kernel.Get<Program>();
-                program.Execute();
+                var result = parser.ParseArguments<CommandLineOptions>(arguments).MapResult(
+                    HandleOptions,
+                    HandleParseFailures);
+                return result;
             }
+        }
+
+        private int HandleOptions(CommandLineOptions options)
+        {
+            _logger.InfoFormat("GitBack starting...");
+
+            var programOptions = ConvertCommandLineOptionsToProgramOptions(options);
+            _gitApi.SetProgramOptions(programOptions);
+            _gitApi.BackupAllRepos();
+
+            return 0;
+        }
+
+        private int HandleParseFailures(IEnumerable<Error> parseErrors)
+        {
+            _logger.Error("Parsing Failed");
+            foreach (var error in parseErrors)
+            {
+                _logger.Error($"Parsing Error: {error.Tag}. {(error.StopsProcessing ? "Stopped" : "Did not stop")} processing");
+            }
+
+            return 1;
         }
 
         private static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
         {
-            return new ProgramOptions
+            var programOptions = new ProgramOptions
             {
                 Username = commandLineOptions.UserName,
                 Password = commandLineOptions.Password,
@@ -39,6 +79,7 @@ namespace GitBack.Console
                 PathToGit = commandLineOptions.PathToGit,
                 ProjectFilter = commandLineOptions.ProjectFilter
             };
+            return programOptions;
         }
     }
 }

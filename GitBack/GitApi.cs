@@ -10,26 +10,35 @@ namespace GitBack
 {
     public class GitApi : IGitApi
     {
-        private readonly ProgramOptions _programOptions;
         private readonly GitClientFactory _clientFactory;
         private readonly ProcessRunner _processRunner;
         private readonly ILog _logger;
 
-        public DirectoryInfo BackupLocation { get; private set; }
-        public string Username { get; private set; }
-        public string Organization { get; private set; }
-        public string Password { get; private set; }
+        private ProgramOptions ProgramOptions { get; set; }
 
-        public GitApi(ProgramOptions programOptions, GitClientFactory clientFactory, ProcessRunner processRunner, ILog logger)
+        public DirectoryInfo BackupLocation => ProgramOptions.BackupLocation;
+        public string Username => ProgramOptions.Username;
+        public string Organization => ProgramOptions.Organization;
+        public string Password => ProgramOptions.Password;
+
+        public GitApi(GitClientFactory clientFactory, ProcessRunner processRunner, ILog logger)
         {
             _clientFactory = clientFactory;
             _processRunner = processRunner;
             _logger = logger;
-            _programOptions = programOptions;
-            Username = programOptions.Username;
-            Organization = programOptions.Organization;
-            BackupLocation = programOptions.BackupLocation;
-            Password = programOptions.Password;
+        }
+
+        public void SetProgramOptions(ProgramOptions programOptions) => ProgramOptions = programOptions;
+
+        public void BackupAllRepos()
+        {
+            var gitRepositories = GetRepositories();
+            var backupDirectory = GetBackupLocation();
+            foreach (var gitRepository in gitRepositories)
+            {
+                _logger.InfoFormat("Backing up {0}.", gitRepository.Name);
+                gitRepository.Backup(backupDirectory);
+            }
         }
 
         public string GetUsername()
@@ -71,7 +80,7 @@ namespace GitBack
                     repositories = repoClient.GetAllForOrg(Organization).Result;
                 }
 
-                var filter = _programOptions.ProjectFilter;
+                var filter = ProgramOptions.ProjectFilter;
 
                 if (!String.IsNullOrEmpty(filter))
                 {
@@ -121,11 +130,11 @@ namespace GitBack
 
 
             var argsWithPasswordHidden = giturl.Replace(Password, "********");
-            _logger.InfoFormat("Executing Command: {0} {1}", _programOptions.PathToGit, argsWithPasswordHidden);
+            _logger.InfoFormat("Executing Command: {0} {1}", ProgramOptions.PathToGit, argsWithPasswordHidden);
 
             var startinfo = new ProcessStartInfo
             {
-                FileName = _programOptions.PathToGit,
+                FileName = ProgramOptions.PathToGit,
                 Arguments = args,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,

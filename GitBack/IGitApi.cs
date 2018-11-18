@@ -13,5 +13,8 @@ namespace GitBack
        
         void Pull(string repositoryName);
         void Clone(string repositoryName);
+
+        void SetProgramOptions(ProgramOptions programOptions);
+        void BackupAllRepos();
     }
 }
