@@ -29,12 +29,7 @@ namespace GitBack.Console
             });
 
             Kernel.Bind<IGitApi>().To<GitApi>();
-            Kernel.Bind<IGitContext>().To<GitContext>();
             Kernel.Bind<IArgumentParser>().To<ArgumentParser>();
-            
-
-
-            
         }
     }
 }

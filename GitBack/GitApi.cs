@@ -19,7 +19,7 @@ namespace GitBack
         public DirectoryInfo BackupLocation => ProgramOptions.BackupLocation;
         public string Username => ProgramOptions.Username;
         public string Organization => ProgramOptions.Organization;
-        public string Password => ProgramOptions.Password;
+        public string Password => ProgramOptions.Token;
 
         public GitApi(GitClientFactory clientFactory, ProcessRunner processRunner, ILog logger)
         {
@@ -58,7 +58,7 @@ namespace GitBack
 
         public string GetPassword()
         {
-            return Password; 
+            return Password;
         }
 
         public IEnumerable<GitRepository> GetRepositories()

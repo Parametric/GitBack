@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using FizzWare.NBuilder;
 using log4net;
-using log4net.Core;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
@@ -21,20 +20,18 @@ namespace GitBack.Tests
         public void GetUsername_ReturnsCorrectUsername()
         { 
             // Arrange
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
-                Password = "password"
-            };
+            const string expectedUsername = "username";
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Username = expectedUsername)
+                .Build();
 
             var gitApi = new GitApi(null, null, null);
             gitApi.SetProgramOptions(programOptions);
 
             // Act
             var username = gitApi.GetUsername();
-            var result = username.Equals("username"); 
+            var result = username.Equals(expectedUsername);
 
             // Assert
             Assert.That(result, Is.True);
@@ -44,20 +41,18 @@ namespace GitBack.Tests
         public void GetOrganization_ReturnsCorrectOrganization()
         {
             // Arrange
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
-                Password = "password"
-            };
+            const string expectedOrganization = "organization";
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Organization = expectedOrganization)
+                .Build();
 
             var gitApi = new GitApi(null, null, null);
             gitApi.SetProgramOptions(programOptions);
 
             // Act
             var organization = gitApi.GetOrganization();
-            var result = organization.Equals("organization");
+            var result = organization.Equals(expectedOrganization);
 
             // Assert
             Assert.That(result, Is.True);
@@ -67,23 +62,18 @@ namespace GitBack.Tests
         public void GetBackupLocation_ReturnsCorrectBackupLocation()
         {
             // Arrange
-            var backupLocation = new DirectoryInfo("backup"); 
-
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Organization = "organization",
-                BackupLocation = backupLocation,
-                Password = "password"
-            };
-
+            var expectedBackupLocation = new DirectoryInfo("backup");
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.BackupLocation = expectedBackupLocation)
+                .Build();
            
             var gitApi = new GitApi(null, null, null);
             gitApi.SetProgramOptions(programOptions);
 
             // Act
             var backup = gitApi.GetBackupLocation();
-            var result = backup.Equals(backupLocation); 
+            var result = backup.Equals(expectedBackupLocation);
 
             // Assert
             Assert.That(result, Is.True);
@@ -93,23 +83,18 @@ namespace GitBack.Tests
         public void GetPassword_ReturnsCorrectPassword()
         {
             // Arrange
-            const string password = "password";
-
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
-                Password = password
-            };
-
+            const string expectedToken = "token";
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Token = expectedToken)
+                .Build();
 
             var gitApi = new GitApi(null, null, null);
             gitApi.SetProgramOptions(programOptions);
 
             // Act
             var backup = gitApi.GetPassword();
-            var result = backup.Equals(password);
+            var result = backup.Equals(expectedToken);
 
             // Assert
             Assert.That(result, Is.True);
@@ -122,19 +107,15 @@ namespace GitBack.Tests
         public void GetRepositories_FromUserAccount_WhenOrganizationIsNotSpecified(string organization)
         {
             // Arrange
-            var backupLocation = new DirectoryInfo("backup");
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password",
-                Organization = organization,
-                BackupLocation = backupLocation,
-            };
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Organization = null)
+                .Build();
 
             var repoClient = Substitute.For<IRepositoriesClient>();
             var clientInitializer = Substitute.For<GitClientFactory>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -152,20 +133,14 @@ namespace GitBack.Tests
         public void GetRepositories_FromOrganization_WhenOrganizationIsSpecified()
         {
             // Arrange
-            var backupLocation = new DirectoryInfo("backup");
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password",
-                Organization = "organization",
-                BackupLocation = backupLocation,
-            };
-
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .Build();
 
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -183,19 +158,16 @@ namespace GitBack.Tests
         public void GetRepositories_MapsResultsToGitRepositoryObjects_WithoutFilter()
         {
             // Arrange
-            var backupLocation = new DirectoryInfo("backup");
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password",
-                Organization = null,
-                BackupLocation = backupLocation,
-            }; 
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Organization = null)
+                .With(x => x.ProjectFilter = null)
+                .Build();
             
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
@@ -225,24 +197,21 @@ namespace GitBack.Tests
         public void GetRepositories_MapsResultsToGitRepositoryObjects_WithFilter()
         {
             // Arrange
-            var backupLocation = new DirectoryInfo("backup");
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password",
-                Organization = null,
-                BackupLocation = backupLocation,
-                ProjectFilter = "1",
-            };
+            var allRepositories = Builder<Repository>.CreateListOfSize(2).Build().ToList();
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Organization = "")
+                .With(x => x.ProjectFilter = allRepositories[0].Name)
+                .Build();
 
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             clientInitializer
-                .CreateGitClient(programOptions.Username, programOptions.Password)
+                .CreateGitClient(programOptions.Username, programOptions.Token)
                 .Returns(repoClient)
                 ;
 
-            var allRepositories = Builder<Repository>.CreateListOfSize(2).Build().ToList();
+            
             var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
             task.RunSynchronously();
 
@@ -263,18 +232,17 @@ namespace GitBack.Tests
         public void GetRepositories_ThrowsException()
         {
             // Arrange
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password"
-            };
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.Organization = "")
+                .Build();
 
             var logger = Substitute.For<ILog>();
             var clientInitializer = Substitute.For<GitClientFactory>();
             var repoClient = Substitute.For<IRepositoriesClient>();
             repoClient.GetAllForCurrent().Throws<AggregateException>();
 
-            clientInitializer.CreateGitClient(programOptions.Username, programOptions.Password).Returns(repoClient);
+            clientInitializer.CreateGitClient(programOptions.Username, programOptions.Token).Returns(repoClient);
 
             var gitApi = new GitApi(clientInitializer, null, logger);
             gitApi.SetProgramOptions(programOptions);
@@ -292,14 +260,11 @@ namespace GitBack.Tests
             var logger = Substitute.For<ILog>();
             var processRunner = Substitute.For<ProcessRunner>(logger);
 
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo("backup"),
-                PathToGit = "//some/path/to/git.exe"
-            };
+            var backupLocation = new DirectoryInfo("backup");
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.BackupLocation = backupLocation)
+                .Build();
 
             var gitApi = new GitApi(clientInitializer, processRunner, logger);
             gitApi.SetProgramOptions(programOptions);
@@ -319,14 +284,11 @@ namespace GitBack.Tests
             var logger = Substitute.For<ILog>();
             var processRunner = Substitute.For<ProcessRunner>(logger);
 
-            var programOptions = new ProgramOptions()
-            {
-                Username = "username",
-                Password = "password",
-                Organization = "organization",
-                BackupLocation = new DirectoryInfo(Directory.GetCurrentDirectory() + "\\backup"), 
-                PathToGit = "//some/path/to/git.exe"
-            };
+            var backupLocation = new DirectoryInfo("backup");
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.BackupLocation = backupLocation)
+                .Build();
 
             var gitApi = new GitApi(clientInitializer, processRunner, logger);
             gitApi.SetProgramOptions(programOptions);
@@ -341,15 +303,19 @@ namespace GitBack.Tests
         private static bool IsMatchingProcessStartInfo(ProcessStartInfo arg, ProgramOptions programOptions, string gitCommand)
         {
             var expectedArguments = "";
+            const string https = "https";
+            var username = programOptions.Username;
+            var token = programOptions.Token;
+            var organization = programOptions.Organization;
             switch (gitCommand.ToLower())
             {
                 case "pull":
-                    expectedArguments =@"-C " + Directory.GetCurrentDirectory() + @"\backup\SomeRepo pull https://username:password@github.com/organization/SomeRepo.git";
+                    expectedArguments =$@"-C {Directory.GetCurrentDirectory()}\backup\SomeRepo pull {https}://{username}:{token}@github.com/{organization}/SomeRepo.git";
 
                     break;
 
                 case "clone":
-                    expectedArguments = @"clone https://username:password@github.com/organization/SomeRepo.git " + Directory.GetCurrentDirectory() + @"\backup\SomeRepo";
+                    expectedArguments = $@"clone {https}://{username}:{token}@github.com/{organization}/SomeRepo.git {Directory.GetCurrentDirectory()}\backup\SomeRepo";
                     break;
 
             }

@@ -45,7 +45,6 @@ namespace GitBack.Console
                 return result;
             }
         }
-
         private int HandleOptions(CommandLineOptions options)
         {
             _logger.InfoFormat("GitBack starting...");
@@ -70,10 +69,10 @@ namespace GitBack.Console
 
         private static ProgramOptions ConvertCommandLineOptionsToProgramOptions(CommandLineOptions commandLineOptions)
         {
-            var programOptions = new ProgramOptions
+            var programOptions = new ProgramOptions()
             {
                 Username = commandLineOptions.UserName,
-                Password = commandLineOptions.Password,
+                Token = commandLineOptions.Token,
                 Organization = commandLineOptions.Organization,
                 BackupLocation = new DirectoryInfo(commandLineOptions.BackupLocation),
                 PathToGit = commandLineOptions.PathToGit,

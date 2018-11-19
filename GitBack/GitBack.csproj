@@ -49,12 +49,9 @@
   <ItemGroup>
     <Compile Include="GitApi.cs" />
     <Compile Include="GitClientFactory.cs" />
-    <Compile Include="GitContext.cs" />
     <Compile Include="GitRepository.cs" />
     <Compile Include="IGitApi.cs" />
-    <Compile Include="IGitContext.cs" />
     <Compile Include="ProcessRunner.cs" />
-    <Compile Include="Program.cs" />
     <Compile Include="ProgramOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
