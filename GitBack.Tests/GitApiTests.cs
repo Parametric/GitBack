@@ -339,5 +339,49 @@ namespace GitBack.Tests
             return result;
 
         }
+
+        [Test]
+        public void BackupAllRepos_AllReposCallBackup()
+        {
+            // Arrange
+            var clientInitializer = Substitute.For<GitClientFactory>();
+            var logger = Substitute.For<ILog>();
+            var processRunner = Substitute.For<ProcessRunner>(logger);
+
+            
+            var backupLocation = new DirectoryInfo("backup");
+            var programOptions = Builder<ProgramOptions>
+                .CreateNew()
+                .With(x => x.BackupLocation = backupLocation)
+                .With(x => x.ProjectFilter = "")
+                .Build();
+
+            var gitApi = new GitApi(clientInitializer, processRunner, logger);
+            gitApi.SetProgramOptions(programOptions);
+            var allRepositories = Builder<Repository>
+                .CreateListOfSize(3)
+                .All().WithFactory(index => new Repository(index))
+                .Build()
+                .ToList();
+
+            var task = new Task<IReadOnlyList<Repository>>(allRepositories.AsReadOnly);
+            task.RunSynchronously();
+
+            var repoClient = Substitute.For<IRepositoriesClient>();
+            clientInitializer.CreateGitClient(programOptions.Username, programOptions.Token).Returns(repoClient);
+            repoClient.GetAllForOrg(programOptions.Organization).Returns(task);
+
+
+            // Act
+            gitApi.BackupAllRepos();
+
+            // Arrange
+            foreach (var gitRepository in allRepositories)
+            {
+                processRunner.Received().Run(
+                    Arg.Is<ProcessStartInfo>(s => s.Arguments.Contains(gitRepository.Name))
+                    );
+            }
+        }
     }
 }

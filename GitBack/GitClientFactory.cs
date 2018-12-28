@@ -14,7 +14,7 @@ namespace GitBack
             var apiConnection = new ApiConnection(connection);
 
             var repoClient = new RepositoriesClient(apiConnection);
-            return repoClient; 
+            return repoClient;
         }
     }
 }

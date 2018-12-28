@@ -17,9 +17,9 @@ namespace GitBack
         private ProgramOptions ProgramOptions { get; set; }
 
         public DirectoryInfo BackupLocation => ProgramOptions.BackupLocation;
-        public string Username => ProgramOptions.Username;
-        public string Organization => ProgramOptions.Organization;
-        public string Password => ProgramOptions.Token;
+        private string Username => ProgramOptions.Username;
+        private string Organization => ProgramOptions.Organization;
+        private string Password => ProgramOptions.Token;
 
         public GitApi(GitClientFactory clientFactory, ProcessRunner processRunner, ILog logger)
         {
@@ -29,6 +29,19 @@ namespace GitBack
         }
 
         public void SetProgramOptions(ProgramOptions programOptions) => ProgramOptions = programOptions;
+
+        /**
+         * 1. find git.exe in the Path if it wasn't provided
+         * 2. test the credential manger (or wincred) and save credentals (and add cofig for it)
+         * 3. start backup
+         *    for each repo
+         *    a if repo does not exist: clone -mirror
+         *    a. if repo exists:
+         *       i. get repo type
+         *       ii. convert normal repos to bare
+         *       iii. bare to mirror (test and set up configs here?)
+         *       iv.  remote origin update
+         */
 
         public void BackupAllRepos()
         {
@@ -69,14 +82,14 @@ namespace GitBack
                 var repoClient = _clientFactory.CreateGitClient(Username, Password);
 
                 IReadOnlyList<Octokit.Repository> repositories;
-                if (String.IsNullOrWhiteSpace(Organization))
+                if (string.IsNullOrWhiteSpace(Organization))
                 {
                     _logger.Info("Retrieving repositories for current github user.");
                     repositories = repoClient.GetAllForCurrent().Result;
                 }
                 else
                 {
-                    _logger.Info(String.Format("Retrieving repositories for: ", Organization));
+                    _logger.Info(string.Format("Retrieving repositories for: ", Organization));
                     repositories = repoClient.GetAllForOrg(Organization).Result;
                 }
 

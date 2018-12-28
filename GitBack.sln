@@ -16,6 +16,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Credential.Manager", "git-credential-gitback\GitBack.Credential.Manager.csproj", "{83032527-80EA-40E6-8929-C39E838BDE0C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Credential.Manager.Tests", "git-credential-gitback.Tests\GitBack.Credential.Manager.Tests.csproj", "{AA6F25EE-4966-41EF-A851-A43AC8032DC7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +38,14 @@ Global
 		{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83032527-80EA-40E6-8929-C39E838BDE0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83032527-80EA-40E6-8929-C39E838BDE0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83032527-80EA-40E6-8929-C39E838BDE0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83032527-80EA-40E6-8929-C39E838BDE0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA6F25EE-4966-41EF-A851-A43AC8032DC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA6F25EE-4966-41EF-A851-A43AC8032DC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA6F25EE-4966-41EF-A851-A43AC8032DC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA6F25EE-4966-41EF-A851-A43AC8032DC7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
