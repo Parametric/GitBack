@@ -16,9 +16,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Credential.Manager", "git-credential-gitback\GitBack.Credential.Manager.csproj", "{83032527-80EA-40E6-8929-C39E838BDE0C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Credential.Manager", "GitBack.Credential.Manager\GitBack.Credential.Manager.csproj", "{83032527-80EA-40E6-8929-C39E838BDE0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Credential.Manager.Tests", "git-credential-gitback.Tests\GitBack.Credential.Manager.Tests.csproj", "{AA6F25EE-4966-41EF-A851-A43AC8032DC7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Credential.Manager.Tests", "GitBack.Credential.Manager.Tests\GitBack.Credential.Manager.Tests.csproj", "{AA6F25EE-4966-41EF-A851-A43AC8032DC7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
