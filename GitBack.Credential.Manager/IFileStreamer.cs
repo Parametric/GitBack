@@ -1,7 +1,11 @@
-﻿namespace GitBack.Credential.Manager {
-    public interface IFileStreamer<T>
+﻿using System.Collections.Generic;
+using System.IO;
+
+namespace GitBack.Credential.Manager
+{
+    public interface IFileStreamer
     {
-        T GetObjectOfType(string location);
-        void StoreObjectOfType(T recordsToKeeps, string location);
+        IEnumerable<ICredentialRecordInfo> GetObjectFromStream(Stream stream);
+        void StoreObjectToStream(IEnumerable<ICredentialRecordInfo> objectToStore, Stream stream);
     }
 }

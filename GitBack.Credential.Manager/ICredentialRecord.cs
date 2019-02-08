@@ -11,5 +11,7 @@ namespace GitBack.Credential.Manager
         void AddOrUpdatePropertyValue(string propertyName, string value);
 
         ICredentialRecordInfo GetCredentialRecordInfo();
+
+        string GetOutputString();
     }
 }

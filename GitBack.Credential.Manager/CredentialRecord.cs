@@ -6,66 +6,18 @@ using System.Text;
 
 namespace GitBack.Credential.Manager
 {
-    public class CredentialRecordInfo : ICredentialRecordInfo
-    {
-        public static CredentialRecordInfo Empty => new CredentialRecordInfo();
-
-        public string Protocol { get; set; }
-        public string Host { get; set; }
-        public string Path { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public bool IsPasswordEncrypted { get; set; }
-        public DateTimeOffset LastUpdated { get; set; }
-        public void Updated() => LastUpdated = DateTimeOffset.Now;
-
-        public bool IsEmpty()
-            => string.IsNullOrEmpty(Protocol) &&
-               string.IsNullOrEmpty(Host) &&
-               string.IsNullOrEmpty(Username) &&
-               string.IsNullOrEmpty(Path);
-
-        public bool IsMatch(ICredentialRecordInfo record)
-        {
-            // this class matches a record if all the properties' values of this class, except password, url, and LastUpdate, are equal to the same properties' values of the given record
-            // Note this class may may match a record that contains properties this class doesn't have
-            // so: a.IsMatch.b may not equal b.IsMatch.a
-            if (record == null) { return false; }
-
-            if (!string.IsNullOrEmpty(Protocol) && !Protocol.Equals(record.Protocol, StringComparison.OrdinalIgnoreCase)) { return false; }
-
-            if (!string.IsNullOrEmpty(Host) && Host.Equals(record.Host, StringComparison.OrdinalIgnoreCase)) { return false; }
-
-            if (!string.IsNullOrEmpty(Username) && !Username.Equals(record.Username, StringComparison.Ordinal)) { return false; }
-
-            if (!string.IsNullOrEmpty(Path) && !Path.Equals(record.Path, StringComparison.Ordinal)) { return false; }
-
-            return true;
-        }
-
-        public override string ToString()
-        {
-            var builder = new StringBuilder();
-            if (!string.IsNullOrEmpty(Protocol)) { builder.AppendLine($"{nameof(Protocol)}={Protocol}"); }
-
-            if (!string.IsNullOrEmpty(Host)) { builder.AppendLine($"{nameof(Host)}={Host}"); }
-
-            if (!string.IsNullOrEmpty(Username)) { builder.AppendLine($"{nameof(Username)}={Username}"); }
-            if (!string.IsNullOrEmpty(Password)) { builder.AppendLine($"{nameof(Password)}={Password}"); }
-
-            if (!string.IsNullOrEmpty(Path)) { builder.AppendLine($"{nameof(Path)}={Path}"); }
-
-            return builder.ToString();
-        }
-    }
-
     public class CredentialRecord : ICredentialRecord
     {
         private readonly ICredentialRecordInfo _credentialRecordInfo;
+        private readonly ILogger _logger;
 
-        public CredentialRecord() : this(CredentialRecordInfo.Empty) { }
+        public CredentialRecord(ILogger logger) : this(CredentialRecordInfo.Empty, logger) { }
 
-        public CredentialRecord(ICredentialRecordInfo credentialRecordInfo) => _credentialRecordInfo = credentialRecordInfo;
+        public CredentialRecord(ICredentialRecordInfo credentialRecordInfo, ILogger logger)
+        {
+            _credentialRecordInfo = credentialRecordInfo;
+            _logger = logger;
+        }
 
         public string Protocol
         {
@@ -114,51 +66,78 @@ namespace GitBack.Credential.Manager
             }
         }
 
-        public string Url
+        private static Uri CreateUri(string protocol, string hostOrPath, string path = null)
+        {
+            var uriString = $"{protocol}{Uri.SchemeDelimiter}{hostOrPath}";
+            var uri = Uri.TryCreate(uriString, UriKind.Absolute, out var uriResult) ? uriResult : null;
+            if (path != null)
+            {
+                uri = Uri.TryCreate(uri, path, out var pathResult) ? pathResult : null;
+            }
+
+            return uri;
+        }
+
+        private string SimpleUrl
         {
             get
             {
                 if (string.IsNullOrEmpty(Protocol)) { return null; }
 
-                // note: what git calls "Host", .Net calls "Authority"
-                var uriBuilder = !string.IsNullOrEmpty(Host)
-                    ? new UriBuilder(Protocol + Uri.SchemeDelimiter + Host)
-                    : new UriBuilder { Scheme = Protocol };
-                uriBuilder.UserName = Username;
-                uriBuilder.Password = Password;
-
-                try
+                // What git (and this class) call host and what .Net calls Authority is actually host[:port]
+                // they are both wrong
+                // from: https://en.wikipedia.org/wiki/URL#Syntax
+                // URI = scheme:[//authority]path[?query][#fragment]
+                // authority = [userinfo@]host[:port]
+                // userinfo = username[:password]
+                
+                Uri uri = null;
+                if (!string.IsNullOrEmpty(Host))
                 {
-                    var uri = uriBuilder.Uri;
-
-                    if (!string.IsNullOrEmpty(Path)) { uri = new Uri(uri, Path); }
-
-                    return uri.AbsoluteUri;
+                    uri = CreateUri(Protocol, Host, Path);
                 }
-                catch (FormatException)
+                else if (!string.IsNullOrEmpty(Path))
                 {
-                    // note add logging
-                    return null;
+                    uri = CreateUri(Protocol, Path);
                 }
+
+                return uri?.AbsoluteUri;
+            }
+        }
+
+        public string Url
+        {
+            get
+            {
+                var simpleUrl = SimpleUrl;
+                if (simpleUrl == null) { return null; }
+
+                if (string.IsNullOrEmpty(Username) && string.IsNullOrEmpty(Password)) { return simpleUrl; }
+
+                if (string.IsNullOrEmpty(Username)) { return null; }
+
+                var uriBuilder = new UriBuilder(simpleUrl) { UserName = Username, Password = Password };
+
+                return Uri.TryCreate(uriBuilder.ToString(), UriKind.Absolute, out var uri) ? uri.AbsoluteUri : null;
             }
             set
             {
                 try
                 {
+                    if (string.IsNullOrWhiteSpace(value)) { return; }
+
                     var uri = new Uri(value, UriKind.Absolute);
                     var uriBuilder = new UriBuilder(uri.ToString());
                     Protocol = uri.Scheme;
-                    Username = uriBuilder.UserName;
-                    Password = uriBuilder.Password;
-                    // note: what git calls "Host", .Net calls "Authority"
+                    if (!string.IsNullOrEmpty(uriBuilder.UserName)) { Username = uriBuilder.UserName; }
+                    if (!string.IsNullOrEmpty(uriBuilder.Password)) { Password = uriBuilder.Password; }
+
+                    // note: what git calls "Host", .Net calls "Authority" see note in SimpleUrl
                     Host = uri.Authority;
                     Path = uri.AbsolutePath + uri.Query + uri.Fragment;
                     Path = Path.TrimStart('/');
                 }
-                catch (FormatException)
-                {
-                    // note add logging
-                }
+                catch (FormatException e) { _logger.Warn($"Could not set string to Uri", e); }
             }
         }
 
@@ -202,7 +181,7 @@ namespace GitBack.Credential.Manager
             PropertyInfo property = null;
             if (!PropertiesNames.ContainsKey(propertyName))
             {
-                // log something?
+                _logger.Warn($"propertyName: {propertyName} is not a valid property name");
                 return;
             }
 
@@ -215,6 +194,69 @@ namespace GitBack.Credential.Manager
 
         public bool IsMatch(ICredentialRecord record) => _credentialRecordInfo.IsMatch(record?.GetCredentialRecordInfo());
 
-        public override string ToString() => _credentialRecordInfo.ToString();
+        public bool Equals(ICredentialRecord other)
+        {
+            if (ReferenceEquals(this, other)) { return true; }
+
+            if (other is null) { return false; }
+
+            var otherRecordInfo = other.GetCredentialRecordInfo();
+            if (ReferenceEquals(_credentialRecordInfo, otherRecordInfo)) { return true; }
+
+            if (otherRecordInfo is null) { return false; }
+
+            return _credentialRecordInfo.Equals(otherRecordInfo);
+        }
+
+        public override bool Equals(object other) => other is ICredentialRecord recordInfo && Equals(recordInfo);
+
+        public override int GetHashCode() => IsEmpty() ? 0 : _credentialRecordInfo.GetHashCode();
+
+        public string GetOutputString()
+        {
+            var builder = new StringBuilder();
+            if (!string.IsNullOrEmpty(Protocol)) { builder.AppendLine($"{nameof(Protocol)}={Protocol}"); }
+
+            if (!string.IsNullOrEmpty(Host)) { builder.AppendLine($"{nameof(Host)}={Host}"); }
+
+            if (!string.IsNullOrEmpty(Username)) { builder.AppendLine($"{nameof(Username)}={Username}"); }
+            if (!string.IsNullOrEmpty(Password)) { builder.AppendLine($"{nameof(Password)}={Password}"); }
+
+            if (!string.IsNullOrEmpty(Path)) { builder.AppendLine($"{nameof(Path)}={Path}"); }
+
+            return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            var stringBuilder = new StringBuilder($"{LastUpdated.ToLocalTime()}: ");
+
+            if (IsEmpty())
+            {
+                stringBuilder.Append(nameof(IsEmpty));
+                return stringBuilder.ToString();
+            }
+
+            var url = Url;
+            if (url != null)
+            {
+                stringBuilder.Append("-: ").Append(url);
+                return stringBuilder.ToString();
+            }
+
+            url = SimpleUrl;
+            if (url != null)
+            {
+                stringBuilder.Append("-: ").Append(url).Append(" ");
+                if (!string.IsNullOrEmpty(Username)) { stringBuilder.Append($"-u {Username} "); }
+                if (!string.IsNullOrEmpty(Password)) { stringBuilder.Append($"-p {Password} "); }
+
+                stringBuilder.Length--;
+                return stringBuilder.ToString();
+            }
+
+
+            return _credentialRecordInfo.ToString();
+        }
     }
 }

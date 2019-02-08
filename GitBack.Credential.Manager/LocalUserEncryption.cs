@@ -2,7 +2,8 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace GitBack.Credential.Manager {
+namespace GitBack.Credential.Manager
+{
     public class LocalUserEncryption : Encryption
     {
         private static readonly Encoding Encoding = new UTF8Encoding(false);

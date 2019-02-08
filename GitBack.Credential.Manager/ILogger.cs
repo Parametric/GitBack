@@ -1,7 +1,9 @@
 ﻿using System;
+using log4net.Core;
 
-namespace GitBack.Credential.Manager {
-    public interface ILogger
+namespace GitBack.Credential.Manager
+{
+    public interface ILogger : ILoggerWrapper
     {
         void Debug(object message, Exception exception = null);
         void Info(object message, Exception exception = null);

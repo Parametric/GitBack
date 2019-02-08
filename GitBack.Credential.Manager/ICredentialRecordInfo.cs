@@ -1,4 +1,5 @@
 ﻿using System;
+using ExtendedXmlSerializer.ContentModel.Content;
 
 namespace GitBack.Credential.Manager
 {

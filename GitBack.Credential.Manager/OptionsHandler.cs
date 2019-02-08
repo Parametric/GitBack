@@ -1,30 +1,63 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using CommandLine;
+using CommandLine.Text;
+using log4net;
 
-namespace GitBack.Credential.Manager {
+namespace GitBack.Credential.Manager
+{
     public class OptionsHandler : IDisposable
     {
+        private static readonly ShowLoggerOutPut[] DefaultLoggerOptions = { ShowLoggerOutPut.None, ShowLoggerOutPut.Error };
+
         private readonly IInputOutput _inputOutput;
-        private bool _disposedValue = false;
+        private bool _disposedValue;
+        private IDisposable _ndcContext;
         private readonly ICredentialRecordsManager _credentialRecordsManager;
         private readonly IInputOutputManager _inputOutputManager;
 
         public OptionsHandler(ICredentialRecordsManager credentialRecordsManager, IInputOutputManager inputOutputManager)
         {
-            _inputOutput = inputOutputManager.GetInputOutput(typeof(OptionsHandler));
-            _credentialRecordsManager = credentialRecordsManager;
+            SetupNdc();
+
             _inputOutputManager = inputOutputManager;
+            InitializeInputOutputManager();
+            _inputOutput = _inputOutputManager.GetInputOutput(typeof(OptionsHandler));
+            _credentialRecordsManager = credentialRecordsManager;
         }
 
-        private void InitializeInputOutputManager(ShowLoggerOutPut[] loggerOptions)
+        private void SetupNdc()
+        {
+            var processId = Process.GetCurrentProcess().Id;
+            var domainId = Thread.GetDomainID();
+            var threadId = Thread.CurrentThread.ManagedThreadId;
+
+            var ndcContext = $"Process:{processId}.d{domainId}.t{threadId}";
+
+            _ndcContext = ThreadContext.Stacks["NDC"].Push(ndcContext);
+        }
+
+        private void InitializeInputOutputManager(IEnumerable<ShowLoggerOutPut> loggerOptions = null)
         {
             var manager = _inputOutputManager;
 
-            if (loggerOptions == null || loggerOptions.Length == 0)
+            var myLoggerOptions = loggerOptions == null
+                ? DefaultLoggerOptions
+                : loggerOptions is ICollection<ShowLoggerOutPut> loggerOptionsCollection
+                    ? loggerOptionsCollection
+                    : loggerOptions.ToArray();
+
+            if (myLoggerOptions.IsEmpty())
             {
-                loggerOptions = new[] { ShowLoggerOutPut.None, ShowLoggerOutPut.Error };
+                myLoggerOptions = DefaultLoggerOptions;
             }
 
-            foreach (var loggerOption in loggerOptions)
+            foreach (var loggerOption in myLoggerOptions)
             {
                 switch (loggerOption)
                 {
@@ -49,14 +82,10 @@ namespace GitBack.Credential.Manager {
                         break;
                 }
             }
-
-            _inputOutput.WriteErrorOnErrorString = manager.WriteErrorOnErrorString;
-            _inputOutput.WriteWarnOnErrorString = manager.WriteWarnOnErrorString;
-            _inputOutput.WriteInfoOnErrorString = manager.WriteInfoOnErrorString;
         }
 
         private static bool ShouldListenOnStdIn(CredentialHelperOptions options, ICredentialRecord record)
-            => (options.Listen == YesNo.Yes || (options.Listen == YesNo.Default && record.IsEmpty()));
+            => (options.Listen == YesNo.Yes || (options.Listen == YesNo.Default && record.IsEmpty() && options.Operation != Operation.List));
 
         private void FillRecordFromStdIn(ICredentialRecord record)
         {
@@ -96,20 +125,30 @@ namespace GitBack.Credential.Manager {
 
             if (arg == null) { throw new ArgumentNullException(nameof(arg));}
 
-            var record = arg.ConvertToCredentialRecord();
+            if (!string.IsNullOrEmpty(arg.ReportLocation))
+            {
+                _credentialRecordsManager.RecordsLocation = new FileInfo(arg.ReportLocation);
+            }
+
+            var record = _credentialRecordsManager.GetCredentialRecordFromOptions(arg);
 
             if (ShouldListenOnStdIn(arg, record)) { FillRecordFromStdIn(record); }
 
             switch (arg.Operation)
             {
                 case Operation.List:
-                    _credentialRecordsManager.ListRecords(record);
+                    var recordList = _credentialRecordsManager.ListRecords(record);
+                    foreach (var outRecord in recordList)
+                    {
+                        _inputOutput.WriteOutput(outRecord);
+                    }
                     break;
                 case Operation.Erase:
                     _credentialRecordsManager.EraseRecords(record);
                     break;
                 case Operation.Get:
-                    _credentialRecordsManager.GetRecord(record);
+                    var outGetRecord = _credentialRecordsManager.GetRecord(record);
+                    _inputOutput.WriteOutput(outGetRecord);
                     break;
                 case Operation.Store:
                     _credentialRecordsManager.StoreRecord(record);
@@ -122,19 +161,40 @@ namespace GitBack.Credential.Manager {
             return 0;
         }
 
+
+        public int HandleErrors(ParserResult<CredentialHelperOptions> parserResult)
+        {
+            if (!(parserResult is NotParsed<CredentialHelperOptions> notParsed))
+            {
+                throw new ArgumentException($"Unknown {nameof(parserResult)}: {parserResult}", nameof(parserResult));
+            }
+
+            var helpText = HelpText.AutoBuild(notParsed, _inputOutput.WriterWidth);
+            helpText.AddEnumValuesToHelpText = true;
+            helpText.AddOptions(parserResult);
+
+            _inputOutput.WriteOutput(helpText);
+
+            var errors = notParsed.Errors.ToList();
+            var versionOrHelpRequested =
+                errors.Any(e => e.Tag == ErrorType.VersionRequestedError ||
+                                e.Tag == ErrorType.HelpRequestedError ||
+                                e.Tag == ErrorType.HelpVerbRequestedError);
+            return versionOrHelpRequested ? 0 : 1;
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposedValue)
             {
                 if (disposing)
                 {
-                    _credentialRecordsManager.Dispose();
-                    _inputOutputManager.Dispose();
+                    _credentialRecordsManager?.Dispose();
+                    _inputOutputManager?.Dispose();
+                    _ndcContext?.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-
+                _ndcContext = null;
                 _disposedValue = true;
             }
         }

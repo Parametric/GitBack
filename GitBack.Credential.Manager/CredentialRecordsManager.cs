@@ -1,21 +1,89 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Text;
+using Ninject.Infrastructure.Language;
 
 namespace GitBack.Credential.Manager {
     public class CredentialRecordsManager : ICredentialRecordsManager
     {
-        private readonly IFileStreamer<List<ICredentialRecord>> _fileStreamer;
-        private readonly string _recordsLocation;
+        public const string RecordEnvironmentVariable = "GitBackRecordsLocation";
+        public const string DefaultRecordDirectoryName = ".GitBack";
+        public const string DefaultRecordFileName = "gitback.credentials.xml";
+
+        private readonly IFileStreamer _fileStreamer;
         private readonly IMutex _recordsLock;
         private readonly IEncryption _encryption;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
+        private readonly IStreamFactory _streamFactory;
 
-        public CredentialRecordsManager(IFileStreamer<List<ICredentialRecord>> fileStreamer, string recordLocation, IMutex recordsLock, IEncryption encryption)
+        public CredentialRecordsManager(IFileStreamer fileStreamer, IStreamFactory streamFactory, IMutex recordsLock, IEncryption encryption, ILoggerFactory loggerFactory)
         {
             _fileStreamer = fileStreamer;
-            _recordsLocation = recordLocation;
+            _streamFactory = streamFactory;
             _recordsLock = recordsLock;
             _encryption = encryption;
+            _loggerFactory = loggerFactory;
+            _logger = loggerFactory.GetLogger(typeof(CredentialRecordsManager));
+        }
+
+        private FileInfo GetDefaultRecordsLocation()
+        {
+            var environmentValue = Environment.GetEnvironmentVariable(RecordEnvironmentVariable);
+            _logger.Info($"Looking for {RecordEnvironmentVariable} Environment Variable for the GitBack credential records location.");
+
+            var location = environmentValue != null
+                ? Environment.ExpandEnvironmentVariables(environmentValue)
+                : DefaultRecordDirectoryName;
+
+            return GetRecordsLocation(location);
+        }
+
+        private FileInfo GetRecordsLocation(string location)
+        {
+            if (!Path.IsPathRooted(location))
+            {
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var newPath = Path.Combine(userProfile, location);
+                _logger.Info($"{location} not rooted, adjusting to {newPath}");
+                location = newPath;
+            }
+
+            if (File.Exists(location))
+            {
+                _logger.Info($"Found File at {location}, using it as the GitBack credential records location.");
+                return new FileInfo(location);
+            }
+
+            var looksLikeADirectory = string.IsNullOrEmpty(Path.GetExtension(location));
+            var looksLikeAHiddenDirectory = string.IsNullOrEmpty(Path.GetFileNameWithoutExtension(location));
+
+            if (Directory.Exists(location) || looksLikeADirectory || looksLikeAHiddenDirectory)
+            {
+                var filePath = Path.Combine(location, DefaultRecordFileName);
+                _logger.Info($"{location} is not file, but is (or could be) a directory. Using {filePath} as the GitBack credential records location.");
+                return new FileInfo(filePath);
+            }
+
+            _logger.Info($"Using {location} as the GitBack credential records location. (No file currently exists there, yet)");
+            return new FileInfo(location);
+        }
+
+        private FileInfo GetRecordsLocation(FileSystemInfo location) => GetRecordsLocation(location.FullName);
+
+        private FileInfo _recordsLocation;
+
+        public FileInfo RecordsLocation
+        {
+            get => _recordsLocation ?? (_recordsLocation = GetDefaultRecordsLocation());
+
+            set => _recordsLocation = GetRecordsLocation(value);
         }
 
         public IEnumerable<string> ListRecords(ICredentialRecord match)
@@ -54,9 +122,15 @@ namespace GitBack.Credential.Manager {
 
         public string GetRecord(ICredentialRecord match)
         {
-            var records = ListRecords(match);
-            var record = records.FirstOrDefault() ?? string.Empty;
+            var records = GetRecords(match);
+            var record = records.FirstOrDefault()?.GetOutputString() ?? string.Empty;
             return record;
+        }
+
+        private IEnumerable<ICredentialRecord> GetRecords(ICredentialRecord match)
+        {
+            var result = LockAndDo(GetStoredCredentials);
+            return result.Where(match.IsMatch).Select(DecryptPassword);
         }
         
         public void StoreRecord(ICredentialRecord record)
@@ -72,6 +146,22 @@ namespace GitBack.Credential.Manager {
             LockAndDo(() => InternalStoreRecord(record));
         }
 
+        public ICredentialRecord GetCredentialRecordFromOptions(CredentialHelperOptions credentialHelperOptions)
+        {
+            var record = new CredentialRecord(_loggerFactory.GetLogger(typeof(CredentialRecord)))
+            {
+                Url = credentialHelperOptions.Url,
+            };
+
+            if (!string.IsNullOrEmpty(credentialHelperOptions.Host)) { record.Host = credentialHelperOptions.Host; }
+            if (!string.IsNullOrEmpty(credentialHelperOptions.Username)) { record.Username = credentialHelperOptions.Username; }
+            if (!string.IsNullOrEmpty(credentialHelperOptions.Password)) { record.Password = credentialHelperOptions.Password; }
+            if (!string.IsNullOrEmpty(credentialHelperOptions.Path)) { record.Path = credentialHelperOptions.Path; }
+            if (!string.IsNullOrEmpty(credentialHelperOptions.Protocol)) { record.Protocol = credentialHelperOptions.Protocol; }
+
+            return record;
+        }
+
         private IEnumerable<string> InternalStoreRecord(ICredentialRecord record)
         {
             var records = GetStoredCredentials().ToList();
@@ -85,20 +175,41 @@ namespace GitBack.Credential.Manager {
         private void SaveRecords(List<ICredentialRecord> recordsToSave)
         {
             recordsToSave.Sort(CompareRecordsByLastUpdate);
-            _fileStreamer.StoreObjectOfType(recordsToSave, _recordsLocation);
+
+            var recordInfosToSave = recordsToSave.Select(r => r.GetCredentialRecordInfo());
+            using (var stream = _streamFactory.GetStream(RecordsLocation))
+            {
+                 _fileStreamer.StoreObjectToStream(recordInfosToSave, stream);
+            }
         }
 
         private static int CompareRecordsByLastUpdate(ICredentialRecord x, ICredentialRecord y)
         {
+            if (ReferenceEquals(x, y)) { return 0; }
+
+            if (x is null) { return -1; }
+
+            if (y is null) { return 1; }
+
             var xLastUpdated = x.LastUpdated;
             var yLastUpdated = y.LastUpdated;
 
-            return xLastUpdated != y.LastUpdated
-                ? yLastUpdated.CompareTo(xLastUpdated)
-                : string.Compare(x.ToString(), y.ToString(), StringComparison.Ordinal);
+            if (xLastUpdated != y.LastUpdated) { return -1 * xLastUpdated.CompareTo(yLastUpdated); }
+
+            return string.CompareOrdinal(x.GetOutputString(), y.GetOutputString());
         }
 
-        private IEnumerable<ICredentialRecord> GetStoredCredentials() => _fileStreamer.GetObjectOfType(_recordsLocation);
+        private IEnumerable<ICredentialRecord> GetStoredCredentials()
+        {
+            IEnumerable<ICredentialRecordInfo> recordInfos;
+            using (var stream = _streamFactory.GetStream(RecordsLocation))
+            {
+                recordInfos = _fileStreamer.GetObjectFromStream(stream);
+            }
+
+            return recordInfos.Select(r => new CredentialRecord(r, _loggerFactory.GetLogger(typeof(CredentialRecord))));
+
+        }
 
         private IEnumerable<T> LockAndDo<T>(Func<IEnumerable<T>> action)
         {

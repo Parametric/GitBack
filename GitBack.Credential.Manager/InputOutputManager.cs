@@ -1,82 +1,164 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
+using log4net.Repository.Hierarchy;
 
-namespace GitBack.Credential.Manager {
+namespace GitBack.Credential.Manager
+{
     public class InputOutputManager : IInputOutputManager
     {
+        private static readonly string TypeName = typeof(InputOutputManager).ToString();
+
+        private readonly Dictionary<string, InputOutput> _loggers = new Dictionary<string, InputOutput>();
         private readonly bool _removeConsoleAppenders;
-        private TextWriter _outputWriter;
-        private TextWriter _errorWriter;
-        private TextReader _inputReader;
+        private IConsole _console;
+        private IInputOutput _logger;
         private bool _disposedValue;
+        
+        private bool _hasChanged;
+        private bool _writeInfo;
+        private bool _writeError;
+        private bool _writeWarn;
 
-        public bool WriteInfoOnErrorString { get; set; }
-        public bool WriteErrorOnErrorString { get; set; }
-        public bool WriteWarnOnErrorString { get; set; }
-
-        public InputOutputManager() : this(false) { }
-
-        public InputOutputManager(bool removeConsoleAppenders) : this(false, Console.Out, Console.Error, Console.In) { }
-
-        public InputOutputManager(bool removeConsoleAppenders, TextWriter outputWriter, TextWriter errorWriter, TextReader inputReader)
+        public bool WriteInfoOnErrorString
         {
-            _removeConsoleAppenders = removeConsoleAppenders;
-            _outputWriter = outputWriter;
-            _errorWriter = errorWriter;
-            _inputReader = inputReader;
+            get => _writeInfo;
+            set
+            {
+                if (value != _writeInfo) { _hasChanged = true; }
+                _writeInfo = value;
+            }
         }
 
-        public IInputOutput GetInputOutput(Type type)
+        public bool WriteErrorOnErrorString
         {
-            var log = log4net.LogManager.GetLogger(type);
-            var logger = log.Logger;
-            if (_removeConsoleAppenders && logger is IAppenderAttachable appenderManager)
+            get => _writeError;
+            set
             {
-                var removeAppenders = from consoleAppender in appenderManager.Appenders.OfType<ConsoleAppender>()
-                                      let removedAppender = appenderManager.RemoveAppender(consoleAppender)
-                                      select removedAppender.Name;
+                if (value != _writeError) { _hasChanged = true; }
 
-                var removedAppenders = removeAppenders.ToList();
-                if (removedAppenders.Any())
-                {
-                    log.Warn("Console Appenders can disrupt this application, consider removing them from your log4net configuration.");
-                    log.Warn($"Removed the following console appenders: {string.Join(", ", removedAppenders)}");
-                }
+                _writeError = value;
+            }
+        }
+
+        public bool WriteWarnOnErrorString
+        {
+            get => _writeWarn;
+            set
+            {
+                if (value != _writeWarn) { _hasChanged = true; }
+
+                _writeWarn = value;
+            }
+        }
+
+        public InputOutputManager(bool removeConsoleAppenders, IConsole console)
+        {
+            _removeConsoleAppenders = removeConsoleAppenders;
+            _console = console;
+
+            InitializeLogger();
+        }
+
+        private void InitializeLogger()
+        {
+            if (!_loggers.ContainsKey(TypeName))
+            {
+                _logger = GetNewInputOutput(TypeName, false);
+                RemoveAppenders(TypeName, _logger);
+                _loggers.Add(TypeName, (InputOutput) _logger);
             }
 
-            return new InputOutput(logger, _outputWriter, _errorWriter, _inputReader)
+            if (_hasChanged)
+            {
+                foreach (var logger in _loggers.Values)
+                {
+                    logger.WriteErrorOnErrorString = WriteErrorOnErrorString;
+                    logger.WriteWarnOnErrorString = WriteWarnOnErrorString;
+                    logger.WriteInfoOnErrorString = WriteInfoOnErrorString;
+                }
+            }
+        }
+
+        public IInputOutput GetInputOutput(string typeFullName)
+        {
+            InitializeLogger();
+            if (!_loggers.ContainsKey(typeFullName))
+            {
+                var newInputOutput = GetNewInputOutput(typeFullName);
+                _loggers.Add(typeFullName, newInputOutput);
+            }
+
+            var inputOutput = _loggers[typeFullName];
+
+            return inputOutput;
+        }
+
+        private InputOutput GetNewInputOutput(string typeFullName, bool removeAppenders = true)
+        {
+            var log = LogManager.GetLogger(typeFullName);
+            var logger = log.Logger;
+
+            var inputOutput = new InputOutput(logger, _console)
             {
                 WriteErrorOnErrorString = WriteErrorOnErrorString,
                 WriteWarnOnErrorString = WriteWarnOnErrorString,
-                WriteInfoOnErrorString = WriteInfoOnErrorString,
+                WriteInfoOnErrorString = WriteInfoOnErrorString
             };
+
+            if (removeAppenders) { RemoveAppenders(typeFullName, inputOutput); }
+
+            return inputOutput;
         }
+
+        private void RemoveAppenders(string typeFullName, ILoggerWrapper loggerWrapper)
+        {
+            var appenderLogger = loggerWrapper.Logger;
+            var removedAppenderNames = new List<string>();
+            while (appenderLogger != null)
+            {
+                if (_removeConsoleAppenders && appenderLogger is IAppenderAttachable appenderManager)
+                {
+                    var appendersToRemove = appenderManager.Appenders.OfType<ConsoleAppender>().ToList();
+
+                    foreach (var removeAppender in appendersToRemove)
+                    {
+                        appenderManager.RemoveAppender(removeAppender);
+                        removedAppenderNames.Add(removeAppender.Name);
+                        removeAppender.Close();
+                    }
+                }
+
+                if (appenderLogger is Logger appenderLoggerAsLogger) { appenderLogger = appenderLoggerAsLogger.Parent; }
+                else { appenderLogger = null; }
+            }
+
+            if (removedAppenderNames.Any())
+            {
+                _logger.Warn("Console Appenders can disrupt this application, consider removing them from your log4net configuration.");
+                _logger.Warn($"For log of {typeFullName}, Removed the following console appenders: {string.Join(", ", removedAppenderNames)}");
+            }
+        }
+
+        public ILogger GetLogger(Type type) => GetLogger(type.FullName);
+        public IInputOutput GetInputOutput(Type type) => GetInputOutput(type.FullName);
+        public ILogger GetLogger(string typeFullname) => GetInputOutput(typeFullname);
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposedValue) {
+            if (!_disposedValue)
+            {
                 if (disposing)
                 {
-                    _inputReader?.Dispose();
-
                     LogManager.Flush(200);
                     LogManager.Shutdown();
-
-                    _outputWriter?.Flush();
-                    _outputWriter?.Dispose();
-
-                    _errorWriter.Flush();
-                    _errorWriter?.Dispose();
-
+                    _console.Dispose();
                 }
 
-                _inputReader = null;
-                _outputWriter = null;
-                _errorWriter = null;
+                _console = null;
 
                 _disposedValue = true;
             }

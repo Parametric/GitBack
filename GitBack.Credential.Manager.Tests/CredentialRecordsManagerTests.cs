@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using NSubstitute;
@@ -10,16 +12,27 @@ namespace GitBack.Credential.Manager.Tests
     {
         private IMutex _mutex;
         private IEncryption _encryption;
-        private IFileStreamer<List<ICredentialRecord>> _fileStreamer;
-        private string _fileLocation;
+        private IFileStreamer _fileStreamer;
+        private IStreamFactory _streamFactory;
+        private ILoggerFactory _loggerFactory;
+        private ILogger _logger;
+        
+        private Stream _stream;
 
         [SetUp]
         public void BeforeEach()
         {
             _mutex = Substitute.For<IMutex>();
-            _encryption = Substitute.For<Manager.IEncryption>();
-            _fileStreamer = Substitute.For<IFileStreamer<List<ICredentialRecord>>>();
-            _fileLocation = "fileLocation";
+            _encryption = Substitute.For<IEncryption>();
+            _fileStreamer = Substitute.For<IFileStreamer>();
+            _logger = Substitute.For<ILogger>();
+            _loggerFactory = Substitute.For<ILoggerFactory>();
+
+            _loggerFactory.GetLogger(Arg.Any<Type>()).Returns(_logger);
+
+            _streamFactory = Substitute.For<IStreamFactory>();
+            _stream = new MemoryStream();
+            _streamFactory.GetStream(Arg.Any<FileInfo>()).Returns(_stream);
         }
 
         [Test]
@@ -28,20 +41,21 @@ namespace GitBack.Credential.Manager.Tests
             // arrange
             _mutex.WaitOne().Returns(true);
 
-            var emptyRecord = new CredentialRecord();
+            var emptyRecord = new CredentialRecord(_logger);
             var credentialRecordCollection = new List<ICredentialRecord>
             {
-                new CredentialRecord { Host = "Host", Protocol = "Https" },
-                new CredentialRecord
+                new CredentialRecord(_logger) { Host = "Host", Protocol = "Https" },
+                new CredentialRecord(_logger)
                 {
                     Host = "Host", Protocol = "Https", Username = "user", Password = "password"
                 },
             };
 
-            _fileStreamer.GetObjectOfType(_fileLocation)
-                        .Returns(credentialRecordCollection);
+            var credentialRecordInfoCollection = credentialRecordCollection.Select(cr => cr.GetCredentialRecordInfo());
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordInfoCollection);
+
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             var result = credentialRecordsManager.ListRecords(emptyRecord);
@@ -58,27 +72,32 @@ namespace GitBack.Credential.Manager.Tests
             _mutex.WaitOne().Returns(true);
             var userToErase = "userToErase";
 
-            var recordsToErase = new CredentialRecord { Username = userToErase };
-            var CredentialRecordCollection = new List<ICredentialRecord>
+            var recordsToErase = new CredentialRecord(_logger) { Username = userToErase };
+            var credentialRecordCollection = new List<ICredentialRecordInfo>
             {
-                new CredentialRecord { Host = "Host", Protocol = "Https" },
-                new CredentialRecord { Host = "Host", Protocol = "Https", Username = "user", Password = "password" },
-                new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToErase, Password = "password" },
+                new CredentialRecordInfo { Host = "Host", Protocol = "Https" },
+                new CredentialRecordInfo { Host = "Host", Protocol = "Https", Username = "user", Password = "password" },
+                new CredentialRecordInfo { Host = "Host", Protocol = "Https", Username = userToErase, Password = "password" },
             };
-
            
-            _fileStreamer.GetObjectOfType(_fileLocation).Returns(CredentialRecordCollection);
-            var listOfRecords = new List<ICredentialRecord>();
-            _fileStreamer.StoreObjectOfType(Arg.Do<List<ICredentialRecord>>( lcr => { listOfRecords.AddRange(lcr); }), _fileLocation);
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
+            var listOfRecords = new List<ICredentialRecordInfo>();
+            _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(lcr => ClearAndAdd(listOfRecords, lcr)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.EraseRecords(recordsToErase);
 
             // assert
             Assert.That(listOfRecords, Is.Not.Empty);
-            Assert.That(listOfRecords, Is.EquivalentTo(CredentialRecordCollection.Where(r => !recordsToErase.IsMatch(r))));
+            Assert.That(listOfRecords, Is.EquivalentTo(credentialRecordCollection.Where(r => !recordsToErase.GetCredentialRecordInfo().IsMatch(r))));
+        }
+
+        private static void ClearAndAdd(List<ICredentialRecordInfo> records, IEnumerable<ICredentialRecordInfo> recordsToAdd)
+        {
+            records.Clear();
+            records.AddRange(recordsToAdd);
         }
 
         [Test]
@@ -88,24 +107,24 @@ namespace GitBack.Credential.Manager.Tests
             _mutex.WaitOne().Returns(true);
             var userToErase = "userToErase";
 
-            var recordsToErase = new CredentialRecord { };
-            var CredentialRecordCollection = new List<ICredentialRecord>
+            var recordsToErase = new CredentialRecord(_logger);
+            var credentialRecordCollection = new List<ICredentialRecordInfo>
             {
-                new CredentialRecord { Host = "Host", Protocol = "Https" },
-                new CredentialRecord { Host = "Host", Protocol = "Https", Username = "user", Password = "password" },
-                new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToErase, Password = "password" },
+                new CredentialRecordInfo { Host = "Host", Protocol = "Https" },
+                new CredentialRecordInfo { Host = "Host", Protocol = "Https", Username = "user", Password = "password" },
+                new CredentialRecordInfo { Host = "Host", Protocol = "Https", Username = userToErase, Password = "password" },
             };
 
            
-            _fileStreamer.GetObjectOfType(_fileLocation).Returns(CredentialRecordCollection);
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.EraseRecords(recordsToErase);
 
             // assert
-            _fileStreamer.DidNotReceive().StoreObjectOfType(Arg.Any<List<ICredentialRecord>>(), Arg.Any<string>());
+            _fileStreamer.DidNotReceive().StoreObjectToStream(Arg.Any<List<ICredentialRecordInfo>>(), Arg.Any<Stream>());
         }
 
         [Test]
@@ -115,24 +134,20 @@ namespace GitBack.Credential.Manager.Tests
             _mutex.WaitOne().Returns(true);
 
             var userToGet = "userToGet";
-            var oldestRecordToStore = new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
+            var oldestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
 
             // force youngest Record to be noticeably younger.
             Thread.Sleep(100);
-            var youngestRecordToStore = new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "youngest-Path" };
-            var recordToMatch = new CredentialRecord { Username = userToGet };
+            var youngestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "youngest-Path" };
+            var recordToMatch = new CredentialRecord(_logger) { Username = userToGet };
 
-            var CredentialRecordCollection = new List<ICredentialRecord>();
-            _fileStreamer.GetObjectOfType(_fileLocation)
-                        .Returns(CredentialRecordCollection);
+            var credentialRecordCollection = new List<ICredentialRecordInfo>();
 
-            _fileStreamer.StoreObjectOfType(Arg.Do<List<ICredentialRecord>>(l =>
-            {
-                CredentialRecordCollection.Clear();
-                CredentialRecordCollection.AddRange(l);
-            }), _fileLocation);
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
+;
+            _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(youngestRecordToStore);
@@ -140,7 +155,7 @@ namespace GitBack.Credential.Manager.Tests
             var record = credentialRecordsManager.GetRecord(recordToMatch);
 
             // assert
-            Assert.That(record, Is.EqualTo(youngestRecordToStore.ToString()));
+            Assert.That(record, Is.EqualTo(youngestRecordToStore.GetOutputString()));
         }
 
         [Test]
@@ -150,24 +165,19 @@ namespace GitBack.Credential.Manager.Tests
             _mutex.WaitOne().Returns(true);
 
             var userToGet = "userToGet";
-            var oldestRecordToStore = new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
+            var oldestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
 
             // force youngest Record to be noticeably younger.
             Thread.Sleep(100);
-            var youngestRecordToStore = new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "youngest-Path" };
-            var recordToMatch = new CredentialRecord { Username = userToGet };
+            var youngestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "youngest-Path" };
+            var recordToMatch = new CredentialRecord(_logger) { Username = userToGet };
 
-            var CredentialRecordCollection = new List<ICredentialRecord>();
-            _fileStreamer.GetObjectOfType(_fileLocation)
-                        .Returns(CredentialRecordCollection);
+            var credentialRecordCollection = new List<ICredentialRecordInfo>();
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
 
-            _fileStreamer.StoreObjectOfType(Arg.Do<List<ICredentialRecord>>(l =>
-            {
-                CredentialRecordCollection.Clear();
-                CredentialRecordCollection.AddRange(l);
-            }), _fileLocation);
+            _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(oldestRecordToStore);
@@ -175,7 +185,7 @@ namespace GitBack.Credential.Manager.Tests
             var record = credentialRecordsManager.GetRecord(recordToMatch);
 
             // assert
-            Assert.That(record, Is.EqualTo(youngestRecordToStore.ToString()));
+            Assert.That(record, Is.EqualTo(youngestRecordToStore.GetOutputString()));
         }
 
         [Test]
@@ -185,33 +195,28 @@ namespace GitBack.Credential.Manager.Tests
             _mutex.WaitOne().Returns(true);
 
             var userToGet = "userToGet";
-            var oldestRecordToStore = new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
+            var oldestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
 
             // force youngest Record to be noticeably younger.
             Thread.Sleep(100);
-            var youngestRecordToStore = new CredentialRecord { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "youngest-Path" };
-            var recordToMatch = new CredentialRecord { Username = userToGet };
+            var youngestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "youngest-Path" };
+            var recordToMatch = new CredentialRecord(_logger) { Username = userToGet };
 
-            var CredentialRecordCollection = new List<ICredentialRecord>();
-            _fileStreamer.GetObjectOfType(_fileLocation)
-                        .Returns(CredentialRecordCollection);
+            var credentialRecordCollection = new List<ICredentialRecordInfo>();
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
 
-            _fileStreamer.StoreObjectOfType(Arg.Do<List<ICredentialRecord>>(l =>
-            {
-                CredentialRecordCollection.Clear();
-                CredentialRecordCollection.AddRange(l);
-            }), _fileLocation);
+            _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(oldestRecordToStore);
             credentialRecordsManager.StoreRecord(youngestRecordToStore);
-            var records = credentialRecordsManager.ListRecords(recordToMatch).ToList();
+            var records = credentialRecordsManager.ListRecords(recordToMatch);
 
             // assert
-            Assert.That(CredentialRecordCollection, Is.Not.Empty);
-            Assert.That(records, Is.EquivalentTo(CredentialRecordCollection.Select(cr => cr.ToString())));
+            Assert.That(credentialRecordCollection, Is.Not.Empty);
+            Assert.That(records, Is.EquivalentTo(credentialRecordCollection.Select(cri => new CredentialRecord(cri, _logger).ToString())));
         }
 
         [Test]
@@ -220,26 +225,96 @@ namespace GitBack.Credential.Manager.Tests
             // arrange
             _mutex.WaitOne().Returns(true);
             var password = "password";
-            var record = new CredentialRecord { Host = "Host", Protocol = "Https", Username = "user", Password = password, Path = "oldest-Path" };
+            var record = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = "user", Password = password, Path = "oldest-Path" };
 
-            var CredentialRecordCollection = new List<ICredentialRecord>();
-            _fileStreamer.GetObjectOfType(_fileLocation)
-                         .Returns(CredentialRecordCollection);
+            var credentialRecordCollection = new List<ICredentialRecordInfo>();
+            _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
 
-            _fileStreamer.StoreObjectOfType(Arg.Do<List<ICredentialRecord>>(l =>
-            {
-                CredentialRecordCollection.Clear();
-                CredentialRecordCollection.AddRange(l);
-            }), _fileLocation);
+            _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _fileLocation, _mutex, _encryption);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(record);
 
             // assert
-            Assert.That(CredentialRecordCollection, Is.Not.Empty);
+            Assert.That(credentialRecordCollection, Is.Not.Empty);
             _encryption.Received().Encrypt(password);
+        }
+
+        [Test]
+        public void GetCredentialRecordFromOptions_Empty()
+        {
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+
+            var credentialHelperOptions = new CredentialHelperOptions();
+
+            var record = credentialRecordsManager.GetCredentialRecordFromOptions(credentialHelperOptions);
+
+            Assert.That(record.IsEmpty);
+        }
+
+        [Test]
+        public void GetCredentialRecordFromOptions_Url_UpdatesOtherValues_IfNotProvided()
+        {
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            const string protocol = "http";
+            const string username = "user";
+            const string password = "pass";
+            const string host = "example.com:82";
+            const string path = "foo?bar#baz";
+
+            var credentialHelperOptions = new CredentialHelperOptions { Url = $"{protocol}://{username}:{password}@{host}/{path}" };
+
+            var record = credentialRecordsManager.GetCredentialRecordFromOptions(credentialHelperOptions);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(record.Protocol, Is.EqualTo(protocol));
+                Assert.That(record.Username, Is.EqualTo(username));
+                Assert.That(record.Password, Is.EqualTo(password));
+                Assert.That(record.Host, Is.EqualTo(host));
+                Assert.That(record.Path, Is.EqualTo(path));
+            });
+        }
+
+        [Test]
+        public void GetCredentialRecordFromOptions_OtherValues_IfProvided()
+        {
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            const string urlProtocol = "http";
+            const string expectedProtocol = "https";
+
+            const string urlUsername = "user";
+            const string expectedUsername = "user1";
+
+            const string urlPassword = "pass";
+            const string expectedPassword = "pass123";
+            const string urlHost = "example.com:82";
+            const string expectedHost = "example1.com";
+            const string urlPath = "foo?bar#baz";
+            const string expectedPath = "foo?bar#baz";
+
+            var credentialHelperOptions = new CredentialHelperOptions
+            {
+                Protocol = expectedProtocol,
+                Path = expectedPath,
+                Url = $"{urlProtocol}://{urlUsername}:{urlPassword}@{urlHost}/{urlPath}",
+                Username = expectedUsername,
+                Password = expectedPassword,
+                Host = expectedHost
+            };
+
+            var record = credentialRecordsManager.GetCredentialRecordFromOptions(credentialHelperOptions);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(record.Protocol, Is.EqualTo(expectedProtocol));
+                Assert.That(record.Username, Is.EqualTo(expectedUsername));
+                Assert.That(record.Password, Is.EqualTo(expectedPassword));
+                Assert.That(record.Host, Is.EqualTo(expectedHost));
+                Assert.That(record.Path, Is.EqualTo(expectedPath));
+            });
         }
     }
 }

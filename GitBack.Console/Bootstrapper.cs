@@ -1,6 +1,4 @@
-﻿using System;
-using CommandLine;
-using log4net;
+﻿using log4net;
 using log4net.Config;
 using Ninject;
 
@@ -9,6 +7,7 @@ namespace GitBack.Console
     public static class Bootstrapper
     {
         private static IKernel _kernel;
+
         public static IKernel Kernel {
             get => _kernel ?? (_kernel = new StandardKernel());
             set => _kernel = value;
