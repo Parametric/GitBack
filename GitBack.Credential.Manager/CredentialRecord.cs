@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -8,6 +10,21 @@ namespace GitBack.Credential.Manager
 {
     public class CredentialRecord : ICredentialRecord
     {
+        private static readonly StringComparer Comparer = StringComparer.OrdinalIgnoreCase;
+
+        private static readonly IReadOnlyDictionary<string, PropertyInfo> PropertiesNames;
+
+        static CredentialRecord()
+        {
+            var myType = typeof(CredentialRecord);
+            var publicProperties = myType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                                         .Where(x => x.GetMethod != null && x.GetMethod.IsPublic && x.SetMethod != null && x.SetMethod.IsPublic);
+
+
+            PropertiesNames = publicProperties.ToImmutableSortedDictionary(k => k.Name, v => v, Comparer);
+        }
+
+
         private readonly ICredentialRecordInfo _credentialRecordInfo;
         private readonly ILogger _logger;
 
@@ -136,6 +153,7 @@ namespace GitBack.Credential.Manager
                     Host = uri.Authority;
                     Path = uri.AbsolutePath + uri.Query + uri.Fragment;
                     Path = Path.TrimStart('/');
+                    Console.Error.WriteLine($"In Set URL: {this.ToString()}/n{this.GetOutputString()}");
                 }
                 catch (FormatException e) { _logger.Warn($"Could not set string to Uri", e); }
             }
@@ -149,45 +167,17 @@ namespace GitBack.Credential.Manager
 
         public DateTimeOffset LastUpdated => _credentialRecordInfo.LastUpdated;
 
-        private static readonly StringComparer Comparer = StringComparer.OrdinalIgnoreCase;
-
-        private static readonly SortedDictionary<string, PropertyInfo> _propertiesNames = new SortedDictionary<string, PropertyInfo>(Comparer);
-        private static IDictionary<string, PropertyInfo> PropertiesNames
-        {
-            get
-            {
-                if (!_propertiesNames.IsEmpty()) { return _propertiesNames; }
-
-                var myType = typeof(CredentialRecord);
-                var publicProperties = myType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                                             .Where(x => x.GetMethod != null && x.GetMethod.IsPublic && x.SetMethod != null && x.SetMethod.IsPublic);
-
-                foreach (var publicProperty in publicProperties)
-                {
-                    var name = publicProperty.Name;
-
-                    if (!_propertiesNames.ContainsKey(name))
-                    {
-                        _propertiesNames.Add(name, publicProperty);
-                    }
-                }
-
-                return _propertiesNames;
-            }
-        }
-
         public void AddOrUpdatePropertyValue(string propertyName, string value)
         {
-            PropertyInfo property = null;
             if (!PropertiesNames.ContainsKey(propertyName))
             {
                 _logger.Warn($"propertyName: {propertyName} is not a valid property name");
                 return;
             }
 
-            property = PropertiesNames[propertyName];
+            var property = PropertiesNames[propertyName];
 
-            property.SetValue(this, value);
+           property?.SetValue(this, value);
         }
 
         public ICredentialRecordInfo GetCredentialRecordInfo() => _credentialRecordInfo;
@@ -251,7 +241,6 @@ namespace GitBack.Credential.Manager
                 if (!string.IsNullOrEmpty(Username)) { stringBuilder.Append($"-u {Username} "); }
                 if (!string.IsNullOrEmpty(Password)) { stringBuilder.Append($"-p {Password} "); }
 
-                stringBuilder.Length--;
                 return stringBuilder.ToString();
             }
 

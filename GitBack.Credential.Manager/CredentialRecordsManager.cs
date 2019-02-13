@@ -1,13 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Text;
-using Ninject.Infrastructure.Language;
 
 namespace GitBack.Credential.Manager {
     public class CredentialRecordsManager : ICredentialRecordsManager
@@ -17,17 +11,17 @@ namespace GitBack.Credential.Manager {
         public const string DefaultRecordFileName = "gitback.credentials.xml";
 
         private readonly IFileStreamer _fileStreamer;
-        private readonly IMutex _recordsLock;
+        private readonly IMutexFactory _recordsLockFactory;
         private readonly IEncryption _encryption;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly IStreamFactory _streamFactory;
 
-        public CredentialRecordsManager(IFileStreamer fileStreamer, IStreamFactory streamFactory, IMutex recordsLock, IEncryption encryption, ILoggerFactory loggerFactory)
+        public CredentialRecordsManager(IFileStreamer fileStreamer, IStreamFactory streamFactory, IMutexFactory recordsLockFactory, IEncryption encryption, ILoggerFactory loggerFactory)
         {
             _fileStreamer = fileStreamer;
             _streamFactory = streamFactory;
-            _recordsLock = recordsLock;
+            _recordsLockFactory = recordsLockFactory;
             _encryption = encryption;
             _loggerFactory = loggerFactory;
             _logger = loggerFactory.GetLogger(typeof(CredentialRecordsManager));
@@ -214,19 +208,27 @@ namespace GitBack.Credential.Manager {
         private IEnumerable<T> LockAndDo<T>(Func<IEnumerable<T>> action)
         {
             var ownMutex = false;
-            try
+            using (var mutex = _recordsLockFactory.GetMutex(RecordsLocation.FullName))
             {
-                ownMutex = _recordsLock.WaitOne();
-                if (ownMutex) { return action(); }
-            }
-            finally
-            {
-                if (ownMutex) { _recordsLock.ReleaseMutex(); }
+                try
+                {
+                    ownMutex = mutex.WaitOne();
+                    if (ownMutex) { return action(); }
+                    else
+                    {
+                        Console.Error.WriteLine($"could not acquire lock on file {RecordsLocation.FullName}");
+                        _logger.Error($"could not acquire lock on file {RecordsLocation.FullName}");
+                    }
+                }
+                finally
+                {
+                    if (ownMutex) { mutex.ReleaseMutex(); }
+                }
             }
 
             return Enumerable.Empty<T>();
         }
 
-        public void Dispose() => _recordsLock.Dispose();
+        public void Dispose() { } //=> _recordsLock.Dispose();
     }
 }

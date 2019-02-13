@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.Linq;
@@ -10,6 +11,7 @@ using ExtendedXmlSerializer.ExtensionModel.Content;
 using ExtendedXmlSerializer.ExtensionModel.Xml;
 using log4net.Config;
 using Ninject;
+using Ninject.Syntax;
 
 namespace GitBack.Credential.Manager
 {
@@ -25,7 +27,7 @@ namespace GitBack.Credential.Manager
         {
             XmlConfigurator.Configure();
 
-            Kernel.Bind<Parser>().ToMethod(context =>
+            Bind<Parser>().ToMethod(context =>
             {
                 return new Parser(s =>
                 {
@@ -39,11 +41,11 @@ namespace GitBack.Credential.Manager
             var inputOutputManager = new InputOutputManager(true, console);
             console.Logger = inputOutputManager.GetLogger(console.GetType());
 
-            Kernel.Bind<IConsole>().ToConstant(console);
-            Kernel.Bind<IInputOutputManager>().ToConstant(inputOutputManager);
-            Kernel.Bind<ILoggerFactory>().ToConstant(inputOutputManager);
+            Bind<IConsole>().ToConstant(console);
+            Bind<IInputOutputManager>().ToConstant(inputOutputManager);
+            Bind<ILoggerFactory>().ToConstant(inputOutputManager);
 
-            Kernel.Bind<IInputOutput>().ToMethod(context => {
+            Bind<IInputOutput>().ToMethod(context => {
                 var type = context.Request.ParentRequest == null
                     ? context.Request.Service
                     : context.Request.ParentRequest.Service;
@@ -54,7 +56,7 @@ namespace GitBack.Credential.Manager
                 return inputOutput;
             }).InTransientScope();
 
-            Kernel.Bind<ILogger>().ToMethod(context => {
+            Bind<ILogger>().ToMethod(context => {
                 var type = context.Request.ParentRequest == null
                     ? context.Request.Service
                     : context.Request.ParentRequest.Service;
@@ -65,9 +67,9 @@ namespace GitBack.Credential.Manager
                 return inputOutput;
             }).InTransientScope();
 
-            Kernel.Bind<OptionsHandler>().ToSelf().InSingletonScope();
+            Bind<OptionsHandler>().ToSelf().InSingletonScope();
 
-            Kernel.Bind<IExtendedXmlSerializer>().ToMethod(x =>
+            Bind<IExtendedXmlSerializer>().ToMethod(x =>
             {
                 var xmlContainer = new ConfigurationContainer()
                                   .UseOptimizedNamespaces()
@@ -76,28 +78,37 @@ namespace GitBack.Credential.Manager
                 return xmlContainer.Create();
             }).InSingletonScope();
 
-            Kernel.Bind<XmlWriterSettings>().ToMethod(x => new XmlWriterSettings
+            Bind<XmlWriterSettings>().ToMethod(x => new XmlWriterSettings
             {
                 Indent = true,
                 NamespaceHandling = NamespaceHandling.OmitDuplicates,
                 DoNotEscapeUriAttributes = false,
                 WriteEndDocumentOnClose = true,
             });
-            Kernel.Bind<XmlReaderSettings>().ToMethod(x => new XmlReaderSettings
+            Bind<XmlReaderSettings>().ToMethod(x => new XmlReaderSettings
             {
                 IgnoreWhitespace = true,
                 IgnoreComments = true,
                 IgnoreProcessingInstructions = true
             });
 
-            Kernel.Bind<IStreamFactory>().To<StreamFactory>();
-            Kernel.Bind<IFileStreamer>().To<FileStreamer>();
+            Bind<IStreamFactory>().To<StreamFactory>();
+            Bind<IFileStreamer>().To<FileStreamer>();
 
-            var mutexName = typeof(Bootstrapper).Namespace + ".records.lock";
-            var mutexTimeout = TimeSpan.FromSeconds(30);
-            Kernel.Bind<IMutex>().ToMethod(context => new Mutex(mutexName, mutexTimeout)).InTransientScope();
-            Kernel.Bind<IEncryption>().To<LocalUserEncryption>();
-            Kernel.Bind<ICredentialRecordsManager>().To<CredentialRecordsManager>();
+            //Kernel.Bind<IMutex>().ToMethod(context => new Mutex(mutexName, mutexTimeout)).InTransientScope();
+            Bind<IMutexFactory>().To<MutexFactory>().InSingletonScope();
+            Bind<IEncryption>().To<LocalUserEncryption>();
+            Bind<ICredentialRecordsManager>().To<CredentialRecordsManager>();
+        }
+
+        public static IBindingToSyntax<T> Bind<T>()
+        {
+            if (Kernel.CanResolve<T>())
+            {
+                throw new InvalidOperationException($"{typeof(T)} is already Bound");
+            }
+
+            return Kernel.Bind<T>();
         }
     }
 }

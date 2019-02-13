@@ -10,16 +10,19 @@ namespace GitBack.Credential.Manager.Tests
 {
     public class FileStreamerTests
     {
-        private IKernel _kernel;
+        private static IKernel _kernel;
         private IExtendedXmlSerializer _serializer;
         private XmlWriterSettings _xmlWriterSettings;
         private XmlReaderSettings _xmlReaderSettings;
 
         [OneTimeSetUp]
-        public void BeforeAll()
+        public static void BeforeAll()
         {
-            Bootstrapper.ConfigureBindings();
-            _kernel = Bootstrapper.Kernel;
+            if (_kernel == null)
+            {
+                Bootstrapper.ConfigureBindings();
+                _kernel = Bootstrapper.Kernel;
+            }
         }
 
         [SetUp]

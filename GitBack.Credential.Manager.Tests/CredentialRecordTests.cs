@@ -13,13 +13,7 @@ namespace GitBack.Credential.Manager.Tests
         private ILogger _logger;
 
         [SetUp]
-        public void BeforeEach()
-        {
-            var xmlContainer = new ConfigurationContainer();
-            var encryptionAlgorithm = new LocalUserEncryption();
-
-            _logger = Substitute.For<ILogger>();
-        }
+        public void BeforeEach() => _logger = Substitute.For<ILogger>();
 
         [TestCaseSource(nameof(UrlTestData), new object[] { "Sets Urls" })]
         [Test]

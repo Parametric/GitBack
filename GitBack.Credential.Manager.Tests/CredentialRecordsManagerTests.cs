@@ -10,7 +10,7 @@ namespace GitBack.Credential.Manager.Tests
 {
     public class CredentialRecordsManagerTests
     {
-        private IMutex _mutex;
+        private IMutexFactory _mutexFactory;
         private IEncryption _encryption;
         private IFileStreamer _fileStreamer;
         private IStreamFactory _streamFactory;
@@ -22,7 +22,12 @@ namespace GitBack.Credential.Manager.Tests
         [SetUp]
         public void BeforeEach()
         {
-            _mutex = Substitute.For<IMutex>();
+             var mutex = Substitute.For<IMutex>();
+             mutex.WaitOne().Returns(true);
+
+            _mutexFactory = Substitute.For<IMutexFactory>();
+            _mutexFactory.GetMutex(Arg.Any<string>()).Returns(mutex);
+
             _encryption = Substitute.For<IEncryption>();
             _fileStreamer = Substitute.For<IFileStreamer>();
             _logger = Substitute.For<ILogger>();
@@ -39,8 +44,6 @@ namespace GitBack.Credential.Manager.Tests
         public void ListRecords()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
-
             var emptyRecord = new CredentialRecord(_logger);
             var credentialRecordCollection = new List<ICredentialRecord>
             {
@@ -55,7 +58,7 @@ namespace GitBack.Credential.Manager.Tests
 
             _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordInfoCollection);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             var result = credentialRecordsManager.ListRecords(emptyRecord);
@@ -69,7 +72,6 @@ namespace GitBack.Credential.Manager.Tests
         public void EraseRecords()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
             var userToErase = "userToErase";
 
             var recordsToErase = new CredentialRecord(_logger) { Username = userToErase };
@@ -84,7 +86,7 @@ namespace GitBack.Credential.Manager.Tests
             var listOfRecords = new List<ICredentialRecordInfo>();
             _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(lcr => ClearAndAdd(listOfRecords, lcr)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.EraseRecords(recordsToErase);
@@ -104,7 +106,6 @@ namespace GitBack.Credential.Manager.Tests
         public void EraseRecords_EmptyMatchingRecord_Does_Nothing()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
             var userToErase = "userToErase";
 
             var recordsToErase = new CredentialRecord(_logger);
@@ -118,7 +119,7 @@ namespace GitBack.Credential.Manager.Tests
            
             _fileStreamer.GetObjectFromStream(_stream).Returns(credentialRecordCollection);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.EraseRecords(recordsToErase);
@@ -131,8 +132,6 @@ namespace GitBack.Credential.Manager.Tests
         public void StoreRecords_WhenYoungestIsStoredFirst_GetRecords_ReturnsYoungest()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
-
             var userToGet = "userToGet";
             var oldestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
 
@@ -147,7 +146,7 @@ namespace GitBack.Credential.Manager.Tests
 ;
             _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(youngestRecordToStore);
@@ -162,8 +161,6 @@ namespace GitBack.Credential.Manager.Tests
         public void StoreRecords_WhenOldestIsStoredFirst_GetRecords_ReturnsYoungest()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
-
             var userToGet = "userToGet";
             var oldestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
 
@@ -177,7 +174,7 @@ namespace GitBack.Credential.Manager.Tests
 
             _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(oldestRecordToStore);
@@ -192,8 +189,6 @@ namespace GitBack.Credential.Manager.Tests
         public void StoreRecords_Stores_All_Records()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
-
             var userToGet = "userToGet";
             var oldestRecordToStore = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = userToGet, Password = "password", Path = "oldest-Path" };
 
@@ -207,7 +202,7 @@ namespace GitBack.Credential.Manager.Tests
 
             _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(oldestRecordToStore);
@@ -223,7 +218,6 @@ namespace GitBack.Credential.Manager.Tests
         public void StoreRecords_Stores_Encrypted_Passwords()
         {
             // arrange
-            _mutex.WaitOne().Returns(true);
             var password = "password";
             var record = new CredentialRecord(_logger) { Host = "Host", Protocol = "Https", Username = "user", Password = password, Path = "oldest-Path" };
 
@@ -232,7 +226,7 @@ namespace GitBack.Credential.Manager.Tests
 
             _fileStreamer.StoreObjectToStream(Arg.Do<IEnumerable<ICredentialRecordInfo>>(l => ClearAndAdd(credentialRecordCollection, l)), _stream);
 
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             // act
             credentialRecordsManager.StoreRecord(record);
@@ -245,7 +239,7 @@ namespace GitBack.Credential.Manager.Tests
         [Test]
         public void GetCredentialRecordFromOptions_Empty()
         {
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
 
             var credentialHelperOptions = new CredentialHelperOptions();
 
@@ -257,7 +251,7 @@ namespace GitBack.Credential.Manager.Tests
         [Test]
         public void GetCredentialRecordFromOptions_Url_UpdatesOtherValues_IfNotProvided()
         {
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
             const string protocol = "http";
             const string username = "user";
             const string password = "pass";
@@ -281,7 +275,7 @@ namespace GitBack.Credential.Manager.Tests
         [Test]
         public void GetCredentialRecordFromOptions_OtherValues_IfProvided()
         {
-            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutex, _encryption, _loggerFactory);
+            var credentialRecordsManager = new CredentialRecordsManager(_fileStreamer, _streamFactory, _mutexFactory, _encryption, _loggerFactory);
             const string urlProtocol = "http";
             const string expectedProtocol = "https";
 
