@@ -12,3 +12,5 @@ Troubleshooting
 ===
 - Make sure you have git installed
 		- This will fix the exception ("Unhandled Exception: System.ComponentModel.Win32Exception: The system cannot find the file specified")
+
+(small change to force update)
