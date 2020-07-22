@@ -15,19 +15,15 @@ namespace GitBack
             _logger = logger;
         }
 
-        public IEnumerable<GitRepository> GetRepositories()
-        {
-            return _gitApi.GetRepositories();
-        }
+        public IEnumerable<GitRepository> GetRepositories() => _gitApi.GetRepositories();
 
         public void BackupAllRepos()
         {            
             var gitRepositories = GetRepositories();
-            var backupDirectory = _gitApi.GetBackupLocation();
             foreach (var gitRepository in gitRepositories)
             {
                 _logger.InfoFormat("Backing up {0}.", gitRepository.Name);
-                gitRepository.Backup(backupDirectory);
+                gitRepository.Backup();
             }                
             
         }

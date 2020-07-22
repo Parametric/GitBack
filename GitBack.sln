@@ -1,13 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2047
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack", "GitBack\GitBack.csproj", "{3E93B276-B1C2-436D-BE61-9EAB0A5ED32D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Tests", "GitBack.Tests\GitBack.Tests.csproj", "{BE3AF14E-2DE7-494D-8FDF-664DECFC4C0B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitBack.Console", "GitBack.Console\GitBack.Console.csproj", "{0386F1CA-2BF0-479A-B8B4-FFC498870F1B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{369F454C-3CBF-41CB-9043-248EB423FAFF}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		License.md = License.md
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +37,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2D19C92E-5161-4E92-B1C4-F9A934BE773B}
 	EndGlobalSection
 EndGlobal

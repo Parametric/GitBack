@@ -1,17 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace GitBack
 {
     public interface IGitApi
     {
-        string GetUsername();
-        string GetOrganization();
-        DirectoryInfo GetBackupLocation();
-        string GetPassword();
+        string Username { get; }
+        string Organization { get; }
+        DirectoryInfo BackupLocation { get; }
         IEnumerable<GitRepository> GetRepositories();
        
-        void Pull(string repositoryName);
-        void Clone(string repositoryName);
+        void Pull(DirectoryInfo repositoryLocation);
+        void Clone(Uri gitUrl, DirectoryInfo repositoryLocation);
     }
 }
